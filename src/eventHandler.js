@@ -15,103 +15,31 @@ export class EventHandler {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.loadedTexture = null;
-        this.textureProperties = {
-            scale: 1,
-            rotation: 0,
-            offsetX: 0,
-            offsetY: 0
-        };
-
+        this.animationsPlaying = true;
+        
         // Initialize global variable
         window.selectedModelPart = null;
         window.findTextureObjects = this.findTextureObjects.bind(this);
 
-        // Setup all event listeners
         this.setupEventListeners();
     }
 
     setupEventListeners() {
-        // Set up sidebar toggle
-        this.setupSidebar();
-
-        // Set up model selection
-        this.setupModelSelector();
-
-        // Set up color controls
-        this.setupColorControls();
-
-        // Set up material controls
-        this.setupMaterialControls();
-
-        // Set up texture controls
+        // Move setup methods to workspace-specific setups
+        this.setupWorkspaceControls();
+        this.setupModelControls();
         this.setupTextureControls();
-
-        // Set up click handling
         this.setupClickHandler();
-
-        // Set up keyboard controls
         this.setupKeyboardHandler();
-
-        // Set up logo upload
-        this.setupLogoUpload();
+        this.setupSidebar();
+        this.setupAnimationToggleButton();
     }
 
-    setupSidebar() {
-        const sidebar = document.querySelector('.sidebar');
-        const menuToggle = document.querySelector('.menu-toggle');
-        let sidebarOpen = false;
-
-        if (menuToggle && sidebar) {
-            menuToggle.addEventListener('click', () => {
-                sidebarOpen = !sidebarOpen;
-                sidebar.classList.toggle('open');
-                this.sceneManager.updateCanvasSize(sidebarOpen);
-            });
-        }
-    }
-
-    setupModelSelector() {
-        const modelSelector = document.getElementById('modelSelector');
-        if (modelSelector) {
-            modelSelector.addEventListener('change', async (event) => {
-                // Reset selection
-                window.selectedModelPart = null;
-                this.updateModelNameDisplay('None');
-                
-                // Show loading screen
-                this.loadingManager.show();
-                
-                try {
-                    // Load new model
-                    const modelControls = await this.modelLoader.loadModels(
-                        this.materialManager,
-                        event.target.value
-                    );
-
-                    // Ensure animations are playing
-                    modelControls.playAllAnimations();
-
-                    // Update camera position and controls
-                    this.camera.position.set(-30, 30, 35);
-                    const center = this.sceneManager.calculateSceneCenter();
-                    this.sceneManager.updateControlsTarget(center);
-
-                    // Apply stored texture if it exists
-                    if (this.loadedTexture) {
-                        this.applyStoredTextureToObjects(this.findTextureObjects());
-                    }
-
-                } catch (error) {
-                    console.error('Error changing model:', error);
-                    this.loadingManager.updateLog(`Error loading model: ${error.message}`);
-                }
-            });
-        }
-    }
-
-    setupColorControls() {
+    setupWorkspaceControls() {
+        // Handle workspace-specific controls
         const colorPicker = document.getElementById('colorPicker');
         const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+        const materialSelect = document.getElementById('materialSelect');
 
         if (colorPicker) {
             colorPicker.addEventListener('input', (event) => {
@@ -132,20 +60,135 @@ export class EventHandler {
                 this.updateModelNameDisplayColor(event.target.value);
             });
         }
+
+        if (materialSelect) {
+            materialSelect.addEventListener('change', async (event) => {
+                if (window.selectedModelPart) {
+                    await this.materialManager.updateMaterial(
+                        window.selectedModelPart, 
+                        event.target.value
+                    );
+                }
+            });
+        }
     }
 
-    setupMaterialControls() {
-        // Material controls are handled by MaterialManager
+    setupAnimationToggleButton() {
+        const toggleAnimationButton = document.createElement('button');
+        toggleAnimationButton.textContent = 'Pause Animations';
+        toggleAnimationButton.style.position = 'fixed';
+        toggleAnimationButton.style.bottom = '10px';
+        toggleAnimationButton.style.right = '10px';
+        document.body.appendChild(toggleAnimationButton);
+
+        toggleAnimationButton.addEventListener('click', () => {
+            this.animationsPlaying = !this.animationsPlaying;
+            toggleAnimationButton.textContent = this.animationsPlaying ? 'Pause Animations' : 'Play Animations';
+            if (this.animationsPlaying) {
+                this.modelLoader.playAllAnimations();
+            } else {
+                this.modelLoader.pauseAllAnimations();
+            }
+        });
+    }
+
+    setupModelControls() {
+        const modelSelector = document.getElementById('modelSelector');
+        if (modelSelector) {
+            modelSelector.addEventListener('change', async (event) => {
+                window.selectedModelPart = null;
+                this.updateModelNameDisplay('None');
+                
+                this.loadingManager.show();
+                
+                try {
+                    const modelControls = await this.modelLoader.loadModels(
+                        this.materialManager,
+                        event.target.value
+                    );
+                    modelControls.playAllAnimations();
+                    
+                    const center = this.sceneManager.calculateSceneCenter();
+                    this.sceneManager.updateControlsTarget(center);
+
+                    if (this.loadedTexture) {
+                        this.applyStoredTextureToObjects(this.findTextureObjects());
+                    }
+                } catch (error) {
+                    console.error('Error changing model:', error);
+                    this.loadingManager.updateLog(`Error loading model: ${error.message}`);
+                }
+            });
+        }
+    }
+
+    setupSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const menuToggle = document.querySelector('.menu-toggle');
+        let sidebarOpen = false;
+
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener('click', () => {
+                sidebarOpen = !sidebarOpen;
+                sidebar.classList.toggle('open');
+                this.sceneManager.updateCanvasSize(sidebarOpen);
+            });
+        }
     }
 
     setupTextureControls() {
-        // Remove old texture controls if they exist
-        const oldControls = document.querySelectorAll('#textureScale, #textureRotation, #textureOffsetX, #textureOffsetY');
-        oldControls.forEach(control => {
-            if (control && control.parentNode) {
-                control.parentNode.removeChild(control);
-            }
-        });
+        const logoUpload = document.getElementById('logoUpload');
+        const textureScaleSlider = document.getElementById('textureScale');
+        const textureRotationSlider = document.getElementById('textureRotation');
+        const textureOffsetXSlider = document.getElementById('textureOffsetX');
+        const textureOffsetYSlider = document.getElementById('textureOffsetY');
+
+        if (logoUpload) {
+            logoUpload.addEventListener('change', (event) => {
+                const file = event.target.files?.[0];
+                if (!file?.type.match('image.*')) {
+                    console.error('File is not an image.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    new THREE.TextureLoader().load(e.target.result, (texture) => {
+                        this.loadedTexture = texture;
+                        this.loadedTexture.encoding = THREE.sRGBEncoding;
+                        this.loadedTexture.flipY = false;
+                        this.loadedTexture.needsUpdate = true;
+                        
+                        this.applyStoredTextureToObjects(this.findTextureObjects());
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (textureScaleSlider) {
+            textureScaleSlider.addEventListener('input', (event) => {
+                // Update texture scale
+            });
+        }
+
+        if (textureRotationSlider) {
+            textureRotationSlider.addEventListener('input', (event) => {
+                // Update texture rotation
+            });
+        }
+
+        if (textureOffsetXSlider) {
+            textureOffsetXSlider.addEventListener('input', (event) => {
+                // Update texture offset X
+            });
+        }
+
+        if (textureOffsetYSlider) {
+            textureOffsetYSlider.addEventListener('input', (event) => {
+                // Update texture offset Y
+            });
+        }
     }
 
     setupClickHandler() {
@@ -181,33 +224,6 @@ export class EventHandler {
         });
     }
 
-    setupLogoUpload() {
-        const logoUpload = document.getElementById('logoUpload');
-        if (logoUpload) {
-            logoUpload.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (!file.type.match('image.*')) {
-                    console.error('File is not an image.');
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    new THREE.TextureLoader().load(e.target.result, (texture) => {
-                        this.loadedTexture = texture;
-                        this.loadedTexture.encoding = THREE.sRGBEncoding;
-                        this.loadedTexture.flipY = false;
-                        this.loadedTexture.needsUpdate = true;
-                        
-                        this.applyStoredTextureToObjects(this.findTextureObjects());
-                    });
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-    }
-
-    // Helper methods
     isSelectableObject(object) {
         return (
             object.isMesh && 
@@ -259,9 +275,8 @@ export class EventHandler {
     updateModelNameDisplay(name) {
         const modelNameDisplay = document.getElementById('modelNameDisplay');
         if (modelNameDisplay) {
-            modelNameDisplay.innerText = "Selected Model: " + name;
+            modelNameDisplay.innerText = `Selected: ${name}`;
             modelNameDisplay.style.color = '#FFFFFF';
-            modelNameDisplay.style.textShadow = '2px 2px #000000';
         }
     }
 
@@ -290,6 +305,13 @@ export class EventHandler {
             if (metalnessSlider && 'metalness' in object.material) {
                 metalnessSlider.value = object.material.metalness;
             }
+        }
+    }
+
+    updateWorkspaceVisibility(workspaceId, isVisible) {
+        const workspace = document.getElementById(`workspace-${workspaceId}`);
+        if (workspace) {
+            workspace.style.display = isVisible ? 'block' : 'none';
         }
     }
 }

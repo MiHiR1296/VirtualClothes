@@ -20,13 +20,12 @@ export class MaterialManager {
                 clearcoat: 0.0,
                 transmission: 0.0,
                 textureSettings: {
-                    scale: 10.0,        // Single scale value for both X and Y
-                    offset: { x: 0, y: 0 },  // Offset the texture slightly
-                    rotation: 0        // No rotation
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
+                    rotation: 0
                 },
                 texturePaths: {
                     normalMap: 'cotton/normal',
-                    //roughnessMap: 'cotton/roughness',
                     aoMap: 'cotton/ao',
                     diffuseMap: 'cotton/diffuse'
                 }
@@ -47,9 +46,9 @@ export class MaterialManager {
                     diffuseMap: 'nylon/diffuse'
                 },
                 textureSettings: {
-                    scale: 10.0,        // Single scale value for both X and Y
-                    offset: { x: 0, y: 0 },  // Offset the texture slightly
-                    rotation: 0        // No rotation
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
+                    rotation: 0
                 },
             },
             leather: {
@@ -63,9 +62,9 @@ export class MaterialManager {
                 clearcoat: 0.5,
                 clearcoatRoughness: 0.4,
                 textureSettings: {
-                    scale: 2.0,        // Single scale value for both X and Y
-                    offset: { x: 0, y: 0.2 },  // Offset the texture slightly
-                    rotation: 0        // No rotation
+                    scale: 2.0,
+                    offset: { x: 0, y: 0.2 },
+                    rotation: 0
                 },
                 texturePaths: {
                     normalMap: 'leather/normal',
@@ -110,12 +109,9 @@ export class MaterialManager {
         const cacheKey = `${basePath}_${mapType}`;
         
         if (this.loadedTextures.has(cacheKey)) {
-            this.updateLoadingLog(`Using cached texture for ${mapType}`);
             return this.loadedTextures.get(cacheKey);
         }
-
-        this.updateLoadingLog(`Loading texture: ${mapType}`);
-        
+    
         const extensions = ['png', 'jpg', 'jpeg'];
         
         for (const ext of extensions) {
@@ -126,18 +122,22 @@ export class MaterialManager {
                     this.textureLoader.load(
                         fullPath,
                         (tex) => {
-                            this.updateLoadingLog(`Loaded texture: ${basePath}`);
-                            tex.encoding = THREE.sRGBEncoding;
+                            // Handle texture properties based on type
+                            if (mapType === 'normalMap') {
+                                tex.colorSpace = THREE.NoColorSpace;
+                            } else if (mapType === 'aoMap' || mapType === 'roughnessMap') {
+                                tex.colorSpace = THREE.NoColorSpace;
+                            } else {
+                                tex.colorSpace = THREE.SRGBColorSpace;
+                            }
+
                             tex.wrapS = THREE.RepeatWrapping;
                             tex.wrapT = THREE.RepeatWrapping;
+                            tex.generateMipmaps = true;
+
                             resolve(tex);
                         },
-                        (progress) => {
-                            if (progress.lengthComputable) {
-                                const percent = (progress.loaded / progress.total * 100).toFixed(2);
-                                this.updateLoadingLog(`Loading ${basePath}: ${percent}%`);
-                            }
-                        },
+                        undefined,
                         reject
                     );
                 });
@@ -149,81 +149,103 @@ export class MaterialManager {
             }
         }
         
-        this.updateLoadingLog(`No texture found for ${basePath}`);
         return null;
     }
 
     async createMaterialWithTextures(presetName, preset) {
-        this.updateLoadingLog(`Creating material: ${presetName}`);
-        
-        const material = new THREE.MeshPhysicalMaterial({
+        const materialParams = {
             name: presetName,
             color: preset.baseColor,
             roughness: preset.roughness,
             metalness: preset.metalness,
-            normalScale: new THREE.Vector2(preset.normalScale, preset.normalScale),
-            sheen: preset.sheen,
+            sheen: preset.sheen || 0,
+            sheenRoughness: preset.sheenRoughness || 0.8,
+            clearcoat: preset.clearcoat || 0,
+            transmission: preset.transmission || 0,
             side: THREE.DoubleSide,
-            shadowSide : THREE.DoubleSide,
             transparent: true
-        });
+        };
+
+        const material = new THREE.MeshPhysicalMaterial(materialParams);
 
         if (preset.texturePaths) {
-            const texturePromises = Object.entries(preset.texturePaths).map(async ([mapType, path]) => {
-                const texture = await this.tryLoadTexture(path, mapType);
-                if (texture) {
-                    // Apply the fixed texture settings
-                    const settings = preset.textureSettings;
-                    texture.wrapS = THREE.RepeatWrapping;
-                    texture.wrapT = THREE.RepeatWrapping;
-                    texture.repeat.set(settings.scale, settings.scale);
-                    texture.offset.set(settings.offset.x, settings.offset.y);
-                    texture.rotation = THREE.MathUtils.degToRad(settings.rotation);
-                    
-                    switch(mapType) {
-                        case 'normalMap':
-                            material.normalMap = texture;
-                            break;
-                        case 'roughnessMap':
-                            material.roughnessMap = texture;
-                            break;
-                        case 'aoMap':
-                            material.aoMap = texture;
-                            material.aoMapIntensity = 1.0;
-                            break;
-                        case 'diffuseMap':
-                            material.map = texture;
-                            break;
+            try {
+                if (preset.texturePaths.normalMap) {
+                    const normalMap = await this.tryLoadTexture(preset.texturePaths.normalMap, 'normalMap');
+                    if (normalMap) {
+                        material.normalMap = normalMap;
+                        material.normalScale.set(preset.normalScale || 1, preset.normalScale || 1);
                     }
                 }
-            });
 
-            await Promise.all(texturePromises);
+                if (preset.texturePaths.aoMap) {
+                    const aoMap = await this.tryLoadTexture(preset.texturePaths.aoMap, 'aoMap');
+                    if (aoMap) {
+                        material.aoMap = aoMap;
+                        material.aoMapIntensity = 1.0;
+                    }
+                }
+
+                if (preset.texturePaths.diffuseMap) {
+                    const diffuseMap = await this.tryLoadTexture(preset.texturePaths.diffuseMap, 'diffuseMap');
+                    if (diffuseMap) {
+                        material.map = diffuseMap;
+                    }
+                }
+
+                // Apply texture settings if provided
+                if (preset.textureSettings) {
+                    const maps = [material.map, material.normalMap, material.aoMap];
+                    maps.forEach(map => {
+                        if (map) {
+                            map.repeat.set(
+                                preset.textureSettings.scale,
+                                preset.textureSettings.scale
+                            );
+                            map.offset.set(
+                                preset.textureSettings.offset.x,
+                                preset.textureSettings.offset.y
+                            );
+                            map.rotation = THREE.MathUtils.degToRad(preset.textureSettings.rotation);
+                            map.needsUpdate = true;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading textures:', error);
+            }
         }
 
+        material.needsUpdate = true;
         return material;
     }
 
     async initializeUI() {
         if (this.initialized) return;
 
-        const materialSelect = document.getElementById('materialSelect');
+        // Create material select if it doesn't exist
+        let materialSelect = document.getElementById('materialSelect');
         if (!materialSelect) {
-            this.updateLoadingLog('Material select element not found');
-            return;
+            materialSelect = document.createElement('select');
+            materialSelect.id = 'materialSelect';
+            document.getElementById('materialSelect-container')?.appendChild(materialSelect);
         }
 
         materialSelect.innerHTML = '';
         
-        for (const [key, preset] of Object.entries(this.materialPresets)) {
+        // Add material options
+        Object.entries(this.materialPresets).forEach(([key, preset]) => {
             const option = document.createElement('option');
             option.value = key;
             option.textContent = preset.name;
             materialSelect.appendChild(option);
-        }
+        });
+
+        // Create controls
+        this.createMaterialControls();
 
         const newSelect = materialSelect.cloneNode(true);
-        materialSelect.parentNode.replaceChild(newSelect, materialSelect);
+        materialSelect.parentNode?.replaceChild(newSelect, materialSelect);
 
         newSelect.addEventListener('change', async (event) => {
             if (window.selectedModelPart) {
@@ -232,6 +254,69 @@ export class MaterialManager {
         });
 
         this.initialized = true;
+    }
+
+    createMaterialControls() {
+        const container = document.getElementById('workspace-colors');
+        if (!container) return;
+
+        // Create roughness slider
+        if (!document.getElementById('roughness')) {
+            const roughnessGroup = document.createElement('div');
+            roughnessGroup.className = 'control-group';
+            
+            const roughnessLabel = document.createElement('label');
+            roughnessLabel.className = 'control-label';
+            roughnessLabel.textContent = 'Roughness';
+            
+            const roughnessSlider = document.createElement('input');
+            roughnessSlider.type = 'range';
+            roughnessSlider.id = 'roughness';
+            roughnessSlider.min = '0';
+            roughnessSlider.max = '1';
+            roughnessSlider.step = '0.01';
+            roughnessSlider.className = 'w-full accent-blue-500';
+
+            roughnessGroup.appendChild(roughnessLabel);
+            roughnessGroup.appendChild(roughnessSlider);
+            container.appendChild(roughnessGroup);
+
+            roughnessSlider.addEventListener('input', (event) => {
+                if (window.selectedModelPart?.material) {
+                    window.selectedModelPart.material.roughness = parseFloat(event.target.value);
+                    window.selectedModelPart.material.needsUpdate = true;
+                }
+            });
+        }
+
+        // Create metalness slider
+        if (!document.getElementById('metalness')) {
+            const metalnessGroup = document.createElement('div');
+            metalnessGroup.className = 'control-group';
+            
+            const metalnessLabel = document.createElement('label');
+            metalnessLabel.className = 'control-label';
+            metalnessLabel.textContent = 'Metalness';
+            
+            const metalnessSlider = document.createElement('input');
+            metalnessSlider.type = 'range';
+            metalnessSlider.id = 'metalness';
+            metalnessSlider.min = '0';
+            metalnessSlider.max = '1';
+            metalnessSlider.step = '0.01';
+            metalnessSlider.className = 'w-full accent-blue-500';
+
+            metalnessGroup.appendChild(metalnessLabel);
+            metalnessGroup.appendChild(metalnessSlider);
+            container.appendChild(metalnessGroup);
+
+            metalnessSlider.addEventListener('input', (event) => {
+                if (window.selectedModelPart?.material) {
+                    window.selectedModelPart.material.metalness = parseFloat(event.target.value);
+                    window.selectedModelPart.material.needsUpdate = true;
+                }
+            });
+        }
     }
 
     async updateMaterial(object, presetName) {
@@ -259,6 +344,7 @@ export class MaterialManager {
 
         } catch (error) {
             this.updateLoadingLog(`Error updating material: ${error.message}`);
+            console.error('Error updating material:', error);
         }
     }
 

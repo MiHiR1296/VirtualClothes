@@ -2,20 +2,53 @@ import * as THREE from 'three';
 
 export class ModelControls {
     constructor() {
-        this.mixers = [];
-        this.actions = [];
+        this.mixers = new Set();
+        this.actions = new Set();
+        this.isPlaying = false;
     }
 
     addMixer(mixer, action) {
         if (mixer && action) {
-            console.log('Adding new mixer and action');
-            this.mixers.push(mixer);
-            this.actions.push(action);
+            this.mixers.add(mixer);
+            this.actions.add(action);
+            console.debug(`Added mixer and action. Total mixers: ${this.mixers.size}`);
         }
     }
 
+    // New method to add just an action
+    addAction(mixer, action) {
+        if (mixer && action) {
+            this.mixers.add(mixer);
+            this.actions.add(action);
+        }
+    }
+
+    playAllAnimations() {
+        if (this.isPlaying) {
+            console.debug('Animations already playing, skipping...');
+            return;
+        }
+
+        const uniqueActions = Array.from(this.actions);
+        console.debug(`Starting animations, total actions: ${uniqueActions.length}`);
+        
+        uniqueActions.forEach(action => {
+            if (action) {
+                action.paused = false;
+                action.reset();
+                action.setEffectiveTimeScale(1);
+                action.setEffectiveWeight(1);
+                action.play();
+            }
+        });
+
+        this.isPlaying = true;
+    }
+
     clearMixers() {
-        console.log('Clearing mixers and actions');
+        console.debug('Clearing mixers and actions');
+        this.isPlaying = false;
+        
         this.actions.forEach(action => {
             if (action) {
                 action.stop();
@@ -29,39 +62,15 @@ export class ModelControls {
             }
         });
 
-        this.mixers = [];
-        this.actions = [];
-    }
-
-    pauseAllAnimations() {
-        console.log('Pausing all animations');
-        this.actions.forEach(action => {
-            if (action) {
-                action.paused = true;
-                action.setEffectiveTimeScale(0);
-            }
-        });
-    }
-
-    playAllAnimations() {
-        console.log('Playing all animations, total actions:', this.actions.length);
-        this.actions.forEach((action, index) => {
-            if (action) {
-                action.paused = false;
-                action.reset();
-                action.setEffectiveTimeScale(1);
-                action.setEffectiveWeight(1);
-                action.play();
-                console.log('Started playing animation', index + 1);
-            }
-        });
+        this.mixers.clear();
+        this.actions.clear();
     }
 
     getCurrentMixers() {
-        return this.mixers;
+        return Array.from(this.mixers);
     }
 
     getCurrentActions() {
-        return this.actions;
+        return Array.from(this.actions);
     }
 }

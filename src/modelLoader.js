@@ -1,32 +1,51 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { ModelControls } from './modelControls.js';
+import { ModelControls } from './ModelControls.js';
 
 const MODEL_PATHS = {
     'model1': {
         directory: '/Models/Polo_T-shirt',
-        materials: ['Backtex.glb', 'Buttons.glb', 'Fronttex.glb', 'Polo_T-shirt.glb', 'Threads.glb' ]
+        materials: ['Backtex.glb', 'Buttons.glb', 'Fronttex.glb', 'Polo_T-shirt.glb', 'Threads.glb'],
+        useDefaultMaterials: false,
+        hasAnimations: true
     },
     'model2': {
         directory: '/Models/CrewNeck_HS_T-shirt_CasPants',
-        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'Metal.glb', 'CrewNeck_HS.glb', 'Pants.glb']
+        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'Metal.glb', 'CrewNeck_HS.glb', 'Pants.glb'],
+        useDefaultMaterials: false,
+        hasAnimations: true
     },
     'model3': {
         directory: '/Models/VNeck_FS_CasPants',
-        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'V-Neck.glb', 'Pants.glb']
+        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'V-Neck.glb', 'Pants.glb'],
+        useDefaultMaterials: false,
+        hasAnimations: true
     },
     'model4': {
         directory: '/Models/Hoodie_Pants',
-        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'Metal.glb', 'Pants.glb', 'Threads.glb', 'Hoodie.glb']
+        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'Metal.glb', 'Pants.glb', 'Threads.glb', 'Hoodie.glb'],
+        useDefaultMaterials: false,
+        hasAnimations: true
+    },
+    'model5': {
+        directory: '/Models/Kids_Tracksuite',
+        materials: ['Fronttex.glb', 'Zipper.glb', 'Jacket.glb', 'Pants.glb'],
+        useDefaultMaterials: true,
+        hasAnimations: false
+    },
+    'model6': {
+        directory: '/Models/Kids_Turtleneck',
+        materials: ['Fronttex.glb', 'TurtleNeck.glb'],
+        useDefaultMaterials: true,
+        hasAnimations: false
     }
 };
 
-// Define material presets
 const MATERIAL_PRESETS = {
     'Avatar': {
         type: 'MeshPhysicalMaterial',
         properties: {
-            color: 0xF5D0C5,  // Skin tone color
+            color: 0xF5D0C5,
             roughness: 0.7,
             metalness: 0.0,
             sheen: 0.3,
@@ -37,7 +56,7 @@ const MATERIAL_PRESETS = {
     'Pants': {
         type: 'MeshPhysicalMaterial',
         properties: {
-            color: 0x1a237e,  // Deep blue color
+            color: 0x1a237e,
             roughness: 1,
             metalness: 0.0,
             sheen: 0.01,
@@ -47,12 +66,14 @@ const MATERIAL_PRESETS = {
 };
 
 export class ModelLoader {
-    constructor(scene, loadingManager) {
+    constructor(scene, loadingManager, sceneManager) {
         this.scene = scene;
         this.loadingManager = loadingManager;
+        this.sceneManager = sceneManager;
         this.modelControls = new ModelControls();
         this.gltfLoader = new GLTFLoader(loadingManager.createThreeJSManager());
         this.currentModel = null;
+        this.loadedModelGroup = null;
     }
 
     createPresetMaterial(presetName) {
@@ -69,149 +90,194 @@ export class ModelLoader {
         return material;
     }
 
-    applyPresetMaterial(object, objectName) {
-        // Check if this object should have a preset material
-        if (objectName.includes('Avatar') || objectName === 'Avatar') {
-            const material = this.createPresetMaterial('Avatar');
-            if (material) {
-                object.material = material;
-                object.material.needsUpdate = true;
+    applyPresetMaterial(object, objectName, useDefaultMaterials) {
+        if (!useDefaultMaterials) {
+            if (objectName.includes('Avatar') || objectName === 'Avatar') {
+                const material = this.createPresetMaterial('Avatar');
+                if (material) {
+                    object.material = material;
+                    object.material.needsUpdate = true;
+                }
             }
-        // } else if (objectName.includes('Pants') || objectName === 'Pants') {
-        //     const material = this.createPresetMaterial('Pants');
-        //     if (material) {
-        //         object.material = material;
-        //         object.material.needsUpdate = true;
-        //     }
         }
     }
 
     async loadModels(materialManager, selectedModel = 'model1') {
-        this.loadingManager.show();
-        this.loadingManager.updateLog(`Loading model set: ${selectedModel}`);
-        
-        // Clear existing models
-        this.clearCurrentModel();
-        
-        const modelConfig = MODEL_PATHS[selectedModel];
-        if (!modelConfig) {
-            this.loadingManager.updateLog('Invalid model selection');
-            return this.modelControls;
-        }
-
         try {
-            const modelPromises = modelConfig.materials.map((filename) => {
-                const modelPath = `${modelConfig.directory}/${filename}`;
-                return this.loadModelWithAnimation(modelPath, materialManager);
-            });
-
-            await Promise.all(modelPromises);
+            const modelConfig = MODEL_PATHS[selectedModel];
+            if (!modelConfig) {
+                throw new Error('Invalid model selection');
+            }
+        
+            // Set current model directory globally
+            window.currentModelDirectory = modelConfig.directory;
+            console.log('Set current model directory:', window.currentModelDirectory);
+        
+            // Start loading process with correct total count
+            this.loadingManager.startLoading(modelConfig.materials.length);
+            this.loadingManager.updateLog(`Loading model set: ${selectedModel}`);
             
-            this.loadingManager.updateLog('Starting animations...');
+            await this.clearCurrentModel();
             
-            // Start animations after all models are loaded
-            setTimeout(() => {
-                this.modelControls.playAllAnimations();
-            }, 100);
+            this.loadedModelGroup = new THREE.Group();
+            this.loadedModelGroup.userData.isLoadedModel = true;
+            this.scene.add(this.loadedModelGroup);
+        
+            const mixer = modelConfig.hasAnimations ? new THREE.AnimationMixer(this.loadedModelGroup) : null;
             
-            setTimeout(() => this.loadingManager.hide(), 500);
-            return this.modelControls;
-
+            try {
+                for (const filename of modelConfig.materials) {
+                    const modelPath = `${modelConfig.directory}/${filename}`;
+                    await this.loadModelPart(modelPath, materialManager, modelConfig, mixer);
+                    this.loadingManager.itemLoaded();
+                    this.loadingManager.updateLog(`Loaded ${filename}`);
+                }
+    
+                if (!this.validateModelLoaded()) {
+                    throw new Error('Model failed to load properly');
+                }
+    
+                this.loadingManager.updateLog('Model loaded successfully');
+                return this.modelControls;
+            } catch (error) {
+                console.error('Error during model loading:', error);
+                this.loadingManager.hide();
+                throw error;
+            }
+        
         } catch (error) {
-            console.error('Error loading models:', error);
-            this.loadingManager.updateLog(`Error loading models: ${error.message}`);
-            setTimeout(() => this.loadingManager.hide(), 500);
-            return this.modelControls;
+            console.error('Error in loadModels:', error);
+            this.loadingManager.updateLog(`Error: ${error.message}`);
+            this.loadingManager.hide();
+            throw error;
         }
     }
 
+    validateModelLoaded() {
+        let hasVisibleMeshes = false;
+        this.scene.traverse((object) => {
+            if (object.isMesh && object.userData.isImported) {
+                hasVisibleMeshes = true;
+            }
+        });
+        return hasVisibleMeshes;
+    }
+
     clearCurrentModel() {
-        this.scene.children = this.scene.children.filter(child => {
-            if (child.type === 'Group' && child.userData.isLoadedModel) {
-                child.traverse((object) => {
+        return new Promise((resolve) => {
+            if (this.loadedModelGroup) {
+                // Stop all animations first
+                this.modelControls.clearMixers();
+    
+                // Dispose geometries and materials
+                this.loadedModelGroup.traverse((object) => {
                     if (object.isMesh) {
                         if (object.geometry) object.geometry.dispose();
                         if (object.material) {
                             if (Array.isArray(object.material)) {
-                                object.material.forEach(material => material.dispose());
+                                object.material.forEach(material => {
+                                    if (material.map) material.map.dispose();
+                                    material.dispose();
+                                });
                             } else {
+                                if (object.material.map) object.material.map.dispose();
                                 object.material.dispose();
                             }
                         }
                     }
                 });
-                return false;
+    
+                // Remove from scene
+                this.scene.remove(this.loadedModelGroup);
+                this.loadedModelGroup = null;
             }
-            return true;
+    
+            // Small delay to ensure cleanup is complete
+            setTimeout(resolve, 100);
         });
-
-        this.modelControls.clearMixers();
     }
 
-    async loadModelWithAnimation(url, materialManager) {
-        this.loadingManager.updateLog(`Loading: ${url}`);
-        
+    async loadModelPart(url, materialManager, modelConfig, groupMixer) {
         return new Promise((resolve, reject) => {
-            this.gltfLoader.load(url,
+            this.gltfLoader.load(
+                url,
                 async (gltf) => {
-                    this.loadingManager.updateLog(`Processing: ${url}`);
-                    
-                    gltf.scene.traverse(async (object) => {
-                        if (object.isMesh) {
-                            if (object.geometry) {
+                    try {
+                        this.loadingManager.updateLog(`Processing: ${url}`);
+                        
+                        gltf.scene.traverse(async (object) => {
+                            if (object.isMesh) {
                                 object.geometry.computeVertexNormals();
-                            }
-                            
-                            object.userData.isImported = true;
-                            
-                            if (object.name.includes("Fronttex") || object.name.includes("Backtex")) {
-                                const textureMaterial = new THREE.MeshStandardMaterial({
-                                    transparent: true,
-                                    side: THREE.FrontSide,
-                                    depthWrite: true,
-                                    depthTest: true,
-                                    alphaTest: 0.1,
-                                    roughness: 0,
-                                   
-                                    clearcoat: 1,
-                                    color: 0xffffff
-                                });
-                                object.material = textureMaterial;
-                                object.renderOrder = 1;
-                            } else {
-                                // Apply preset materials first
-                               this.applyPresetMaterial(object, object.name);
+                                object.userData.isImported = true;
                                 
-                                // If no preset was applied, use the default material
-                                if (!MATERIAL_PRESETS[object.name]) {
-                                    await materialManager.updateMaterial(object, 'cotton');
-                                }
+                                await this.processMeshMaterial(
+                                    object, 
+                                    materialManager, 
+                                    modelConfig
+                                );
+                                
+                                object.castShadow = true;
+                                object.receiveShadow = true;
                             }
-                            
-                            object.castShadow = true;
-                            object.receiveShadow = true;
+                        });
+    
+                        if (this.loadedModelGroup) {
+                            this.loadedModelGroup.add(gltf.scene);
                         }
-                    });
-
-                    gltf.scene.userData.isLoadedModel = true;
-                    this.scene.add(gltf.scene);
-
-                    if (gltf.animations?.length > 0) {
-                        const mixer = new THREE.AnimationMixer(gltf.scene);
-                        const action = mixer.clipAction(gltf.animations[0]);
-                        this.modelControls.addMixer(mixer, action);
-                    }
-
-                    resolve(gltf);
-                },
-                (progress) => {
-                    if (progress.lengthComputable) {
-                        const percentComplete = Math.round((progress.loaded / progress.total) * 100);
-                        this.loadingManager.updateLog(`Loading ${url}: ${percentComplete}%`);
+    
+                        // Updated animation handling
+                        if (modelConfig.hasAnimations && gltf.animations?.length > 0 && groupMixer) {
+                            gltf.animations.forEach(animation => {
+                                const action = groupMixer.clipAction(animation);
+                                this.modelControls.addMixer(groupMixer, action); // Changed from addAction to addMixer
+                            });
+                        }
+    
+                        resolve(gltf);
+                    } catch (error) {
+                        reject(error);
                     }
                 },
+                undefined,
                 reject
             );
         });
+    }
+
+    async processMeshMaterial(object, materialManager, modelConfig) {
+        try {
+            if (object.name.includes("Fronttex") || object.name.includes("Backtex")) {
+                const textureMaterial = new THREE.MeshPhysicalMaterial({
+                    transparent: true,
+                    side: THREE.FrontSide,
+                    depthWrite: true,
+                    depthTest: true,
+                    alphaTest: 0.1,
+                    roughness: 0,
+                    clearcoat: 1,
+                    clearcoatRoughness: 0,
+                    color: 0xffffff
+                });
+    
+                // Enable texture wrapping for potential repeating textures
+                if (textureMaterial.map) {
+                    textureMaterial.map.wrapS = THREE.RepeatWrapping;
+                    textureMaterial.map.wrapT = THREE.RepeatWrapping;
+                    textureMaterial.map.needsUpdate = true;
+                }
+    
+                object.material = textureMaterial;
+                object.renderOrder = 1;
+            } else if (!modelConfig.useDefaultMaterials) {
+                this.applyPresetMaterial(object, object.name, modelConfig.useDefaultMaterials);
+                
+                if (!MATERIAL_PRESETS[object.name]) {
+                    await materialManager.updateMaterial(object, 'cotton');
+                }
+            }
+        } catch (error) {
+            console.error('Error processing mesh material:', error);
+            throw error;
+        }
     }
 }

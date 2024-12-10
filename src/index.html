@@ -1,136 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-       
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>3D Model Viewer</title>
-        <link rel="stylesheet" href="style.css">
-        
-        <!-- Import maps to handle three.js dependencies -->
-        <script type="importmap">
-            {
-                "imports": {
-                    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                    "three/examples/jsm/controls/OrbitControls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js",
-                    "three/examples/jsm/loaders/GLTFLoader": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
-                    "three/examples/jsm/loaders/EXRLoader": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/EXRLoader.js"
-                }
-            }
-            </script>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model Viewer</title>
+</head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading-screen">
+    <div id="root"></div>
+    <div class="loading-screen hidden">
         <div class="loading-text">Loading...</div>
-        <div class="loading-log">Initializing...</div>
+        <div id="loadingBarContainer">
+            <div id="loadingBar"></div>
+        </div>
+        <div class="loading-log"></div>
     </div>
-
-    <!-- Loading Bar -->
-    <div id="loadingBarContainer">
-        <div id="loadingBar"></div>
-    </div>
-
-    <!-- Menu Toggle -->
-    <div class="menu-toggle">☰</div>
-
-    <!-- Help Button -->
-    <div class="help-button">
-        ?
-        <div class="help-tooltip">
-            <h4>Tips:</h4>
-            <ul>
-                <li>Use the model selector to switch between different 3D models</li>
-                <li>Adjust material properties using the sliders</li>
-                <li>Upload your own logo in PNG format</li>
-                <li>Customize texture settings for better visualization</li>
-                <li>Use color pickers to change model and background colors</li>
-                <li>Navigation: W/↑ (forward), S/↓ (backward), A/← (left), D/→ (right), Q (up), E (down)</li>
-                <li>Object Selection only works when the sidepanel is closed</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="control-section">
-            <h3>Model Selection</h3>
-            <select id="modelSelector">
-                <option value="model1">Model 1</option>
-                <option value="model2">Model 2</option>
-                <option value="model3">Model 3</option>
-                <option value="model4">Model 4</option>
-            </select>
-        </div>
-
-
-        <!-- <div class="control-section">
-            <h3>Background Gradient</h3>
-            <label>Top Color:</label>
-            <input type="color" id="bgColorTop" value="#1a2a6c">
-            <label>Middle Color:</label>
-            <input type="color" id="bgColorMiddle" value="#b21f1f">
-            <label>Bottom Color:</label>
-            <input type="color" id="bgColorBottom" value="#fdbb2d">
-            
-            <h3>Model Color</h3>
-            <input type="color" id="colorPicker" value="#FFFFFF">
-        </div> -->
-
-        <div class="control-section">
-            <h3>Colors</h3>
-            <label>Background Color:</label>
-            <input type="color" id="backgroundColorPicker" value="#8FBCD4">
-            <label>Model Color:</label>
-            <input type="color" id="colorPicker" value="#FFFFFF">
-        </div>
-
-        <div class="control-section">
-            <h3>Material Type</h3>
-            <select id="materialSelect">
-                <!-- Populated by MaterialManager -->
-            </select>
-        </div>
-
-        <!-- <div class="control-section">
-            <h3>Material Properties</h3>
-            <label>Roughness:</label>
-            <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.5">
-            <label>Metalness:</label>
-            <input type="range" id="metalness" min="0" max="1" step="0.01" value="0.5">
-        </div> -->
-
-        <div class="control-section">
-            <h3>Logo Upload</h3>
-            <input type="file" id="logoUpload" accept="image/*">
-        </div>
-
-        <div class="control-section">
-            <h3>Texture Settings</h3>
-            <div id="texture-controls"></div>
-        </div>
-
-        <!-- <div class="control-section">
-            <h3>Texture Settings</h3>
-            <label>Scale:</label>
-            <input type="range" id="textureScale" min="0.1" max="5" step="0.1" value="1">
-            <label>Rotation:</label>
-            <input type="range" id="textureRotation" min="0" max="360" step="1" value="0">
-            <label>Offset X:</label>
-            <input type="range" id="textureOffsetX" min="-1" max="1" step="0.01" value="0">
-            <label>Offset Y:</label>
-            <input type="range" id="textureOffsetY" min="-1" max="1" step="0.01" value="0">
-        </div> -->
-    </div>
-
-    <!-- Main Content -->
-    <div class="content">
-        <div id="modelNameDisplay">Selected Model: None</div>
-        <div id="modelHoverTooltip"></div>
-        <canvas class="threejs"></canvas>
-    </div>
-
-    <!-- Scripts -->
-    <script type="module" src="main.js"></script>
+    <script type="module" src="./main.jsx"></script>
 </body>
 </html>
