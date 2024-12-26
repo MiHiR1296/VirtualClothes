@@ -299,11 +299,35 @@ export class EventHandler {
                 colorPicker.value = '#' + object.material.color.getHexString();
             }
             
-            if (roughnessSlider && 'roughness' in object.material) {
-                roughnessSlider.value = object.material.roughness;
+            // if (roughnessSlider && 'roughness' in object.material) {
+            //     roughnessSlider.value = object.material.roughness;
+            // }
+            // if (metalnessSlider && 'metalness' in object.material) {
+            //     metalnessSlider.value = object.material.metalness;
+            // }
+
+            if (roughnessSlider) {
+                roughnessSlider.addEventListener('input', (event) => {
+                    const value = parseFloat(event.target.value);
+                    this.scene.traverse((object) => {
+                        if (object.isMesh && (object.name.includes("Fronttex") || object.name.includes("Backtex"))) {
+                            object.material.roughness = value;
+                            object.material.needsUpdate = true;
+                        }
+                    });
+                });
             }
-            if (metalnessSlider && 'metalness' in object.material) {
-                metalnessSlider.value = object.material.metalness;
+            
+            if (metalnessSlider) {
+                metalnessSlider.addEventListener('input', (event) => {
+                    const value = parseFloat(event.target.value);
+                    this.scene.traverse((object) => {
+                        if (object.isMesh && (object.name.includes("Fronttex") || object.name.includes("Backtex"))) {
+                            object.material.metalness = value;
+                            object.material.needsUpdate = true;
+                        }
+                    });
+                });
             }
         }
     }

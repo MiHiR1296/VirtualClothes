@@ -24,42 +24,43 @@ export default function TextureLayerManager() {
     
     objects.forEach(object => {
       if (!object.isMesh) return;
-
+  
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-
-      // Set canvas size to power of 2 for better texture performance
+  
       canvas.width = 1024;
       canvas.height = 1024;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+  
+      // Store original normal map and properties
+      const originalNormalMap = object.material.normalMap;
+      const originalNormalScale = object.material.normalScale?.clone();
+      const currentRoughness = object.material.roughness || 0.8;
+      const currentMetalness = object.material.metalness || 0.1;
+  
       // Apply layers from bottom to top
       layers.slice().reverse().forEach(layer => {
         if (!layer.visible || !layer.texture || !layer.texture.image) return;
-
+  
         const layerCanvas = document.createElement('canvas');
         const layerCtx = layerCanvas.getContext('2d');
         if (!layerCtx) return;
-
+  
         layerCanvas.width = canvas.width;
         layerCanvas.height = canvas.height;
-
+  
         if (layer.transformations.repeat) {
-          // Create repeating pattern
           const patternSize = canvas.width / (4 / layer.transformations.scale);
           const tempCanvas = document.createElement('canvas');
           const tempCtx = tempCanvas.getContext('2d');
           tempCanvas.width = patternSize;
           tempCanvas.height = patternSize;
           
-          // Draw scaled image to temp canvas
           tempCtx.drawImage(layer.texture.image, 0, 0, patternSize, patternSize);
           
-          // Create pattern
           const pattern = layerCtx.createPattern(tempCanvas, 'repeat');
           if (pattern) {
-            // Apply transformations to pattern
             const matrix = new DOMMatrix()
               .translateSelf(
                 layer.transformations.offset.x * canvas.width,
@@ -76,7 +77,6 @@ export default function TextureLayerManager() {
             layerCtx.fillRect(0, 0, canvas.width, canvas.height);
           }
         } else {
-          // Draw single image with transformations
           layerCtx.save();
           layerCtx.translate(canvas.width / 2, canvas.height / 2);
           layerCtx.rotate(layer.transformations.rotation * Math.PI / 180);
@@ -84,7 +84,7 @@ export default function TextureLayerManager() {
             (layer.transformations.flipX || 1) * layer.transformations.scale,
             (layer.transformations.flipY || 1) * layer.transformations.scale
           );
-
+  
           const imgWidth = canvas.width * 0.8;
           const imgHeight = canvas.height * 0.8;
           layerCtx.drawImage(
@@ -96,18 +96,15 @@ export default function TextureLayerManager() {
           );
           layerCtx.restore();
         }
-
-        // Composite the layer onto main canvas
+  
         ctx.globalAlpha = layer.opacity;
         ctx.drawImage(layerCanvas, 0, 0);
       });
-
-      // Create texture and apply to material
+  
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
       
-      // Set repeat based on scale if repeating is enabled
       if (activeLayer?.transformations?.repeat) {
         const repeatFactor = 1 / activeLayer.transformations.scale;
         texture.repeat.set(repeatFactor, repeatFactor);
@@ -117,8 +114,7 @@ export default function TextureLayerManager() {
       
       texture.flipY = false;
       texture.needsUpdate = true;
-
-      // Create new material with the updated texture
+  
       const newMaterial = new THREE.MeshPhysicalMaterial({
         map: texture,
         transparent: true,
@@ -126,12 +122,13 @@ export default function TextureLayerManager() {
         depthWrite: true,
         depthTest: true,
         alphaTest: 0.1,
-        roughness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0,
+        roughness: currentRoughness,
+        metalness: currentMetalness,
+        normalMap: originalNormalMap,
+        normalScale: originalNormalScale || new THREE.Vector2(0.5, 0.5),
         color: 0xffffff
       });
-
+  
       object.material = newMaterial;
       object.material.needsUpdate = true;
       object.renderOrder = 1;

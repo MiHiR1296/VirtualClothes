@@ -256,11 +256,18 @@ export class ModelLoader {
                     depthTest: true,
                     //envMapIntensity: LIGHTING_CONFIG.environmentMap.envMapIntensity,
                     alphaTest: 0.1,
-                    roughness: 0,
-                    clearcoat: 1,
-                    clearcoatRoughness: 0,
+                    roughness: 1,
+                    clearcoat: 0,
+                    clearcoatRoughness: 1,
                     color: 0xffffff
                 });
+
+                // Copy normal map from the model's material if it exists
+                const modelMaterial = object.material;
+                if (modelMaterial && modelMaterial.normalMap) {
+                    textureMaterial.normalMap = modelMaterial.normalMap.clone();
+                    textureMaterial.normalScale.copy(modelMaterial.normalScale || new THREE.Vector2(0.5, 0.5));
+                }textureMaterial.needsUpdate = true;    
     
                 // Enable texture wrapping for potential repeating textures
                 if (textureMaterial.map) {
