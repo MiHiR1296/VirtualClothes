@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { LightingSystem, LIGHTING_CONFIG } from './lighting.js';
 import { ModelControls } from './ModelControls.js';
 
 const MODEL_PATHS = {
     'model1': {
         directory: '/Models/Polo_T-shirt',
-        materials: ['Backtex.glb', 'Buttons.glb', 'Fronttex.glb', 'Polo_T-shirt.glb', 'Threads.glb'],
-        useDefaultMaterials: false,
-        hasAnimations: true
+        materials: [ 'Buttons.glb', 'Fronttex.glb', 'Polo_T-shirt.glb', 'Threads.glb'],
+        //  materials: ['Backtex.glb', 'Buttons.glb', 'Fronttex.glb', 'Polo_T-shirt.glb', 'Threads.glb'],
+        useDefaultMaterials: true,
+        hasAnimations: false
     },
     'model2': {
         directory: '/Models/CrewNeck_HS_T-shirt_CasPants',
@@ -252,6 +254,7 @@ export class ModelLoader {
                     side: THREE.FrontSide,
                     depthWrite: true,
                     depthTest: true,
+                    //envMapIntensity: LIGHTING_CONFIG.environmentMap.envMapIntensity,
                     alphaTest: 0.1,
                     roughness: 0,
                     clearcoat: 1,

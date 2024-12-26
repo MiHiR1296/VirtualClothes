@@ -159,6 +159,7 @@ export class MaterialManager {
             roughness: preset.roughness,
             metalness: preset.metalness,
             sheen: preset.sheen || 0,
+            //envMapIntensity: LIGHTING_CONFIG.environmentMap.envMapIntensity,
             sheenRoughness: preset.sheenRoughness || 0.8,
             clearcoat: preset.clearcoat || 0,
             transmission: preset.transmission || 0,

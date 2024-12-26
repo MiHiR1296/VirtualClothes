@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { LoadingManager } from './loadingManager.js';
 import { SceneManager } from './sceneSetup.js';
-import { LightingSystem } from './lighting.js';
+import { LightingSystem, LIGHTING_CONFIG } from './lighting.js';
 import { ModelLoader } from './modelLoader.js';
 import { MaterialManager } from './materialManager.js';
 import { PostProcessing } from './postProcessing.js';
@@ -13,7 +13,6 @@ export class ThreeApplication {
         this.canvas = canvas;
         this.initialized = false;
         this.currentModelId = null;
-        // Create a single loading manager instance
         this.loadingManager = new LoadingManager();
         this.initPromise = this.init();
     }
@@ -22,7 +21,6 @@ export class ThreeApplication {
         try {
             this.loadingManager.show();
 
-            // Pass the same loadingManager instance to SceneManager
             this.sceneManager = new SceneManager(this.loadingManager, this.canvas);
             const { scene, camera, renderer, controls } = this.sceneManager.getComponents();
 
@@ -31,10 +29,17 @@ export class ThreeApplication {
             this.renderer = renderer;
             this.controls = controls;
 
-            // Initialize systems with the same loadingManager instance
+            // Initialize lighting system with new optimized version
             this.lightingSystem = new LightingSystem(scene, renderer);
+
+            // Set initial environment intensity
+            this.lightingSystem.updateEnvironmentMapIntensity(LIGHTING_CONFIG.environmentMap.envMapIntensity);
+
+            // // Set initial environment intensity
+            // this.lightingSystem.updateEnvironmentMapIntensity(LIGHTING_CONFIG.environmentMap.intensity);
+            
+            // Pass the lighting system to other components that need it
             this.materialManager = new MaterialManager();
-            // Pass the single loadingManager instance
             this.modelLoader = new ModelLoader(scene, this.loadingManager, this.sceneManager);
             this.postProcessing = new PostProcessing(scene, camera, renderer);
 
@@ -50,7 +55,39 @@ export class ThreeApplication {
             );
 
             renderer.composer = this.postProcessing.composer;
-            animate(renderer, scene, camera, controls, this.modelLoader.modelControls);
+
+            // Modify your animate function to include lighting system updates
+            const animate = () => {
+                requestAnimationFrame(animate);
+                
+                // Update lighting system
+                this.lightingSystem.update(this.camera);
+                
+                // Simple performance logging
+                if (Date.now() % 5000 < 16) {  // Every 5 seconds
+                    const renderTime = this.renderer.info.render;
+                    console.log('Render Performance:', {
+                        triangles: this.renderer.info.render.triangles,
+                        calls: this.renderer.info.render.calls,
+                        points: this.renderer.info.render.points,
+                        lines: this.renderer.info.render.lines,
+                        totalMemory: this.renderer.info.memory.geometries + 
+                                    this.renderer.info.memory.textures
+                    });
+                    
+                    // Optional: Reset render info after logging
+                    this.renderer.info.reset();
+                }
+
+                
+   
+
+                // Rest of your animation code
+                controls.update();
+                renderer.composer.render();
+            };
+
+            animate();
 
             this.initialized = true;
             await this.loadModel('model1');
@@ -62,6 +99,12 @@ export class ThreeApplication {
             this.loadingManager.hide();
             throw error;
         }
+    }
+
+     // Log the environment intensity after 5 seconds
+     logEnvironmentIntensity() {
+        const intensity = this.lightingSystem.getEnvironmentIntensity();
+        console.log('Environment light intensity:', intensity);
     }
 
     // In ThreeApplication.js
@@ -98,6 +141,8 @@ async loadModel(modelId) {
                 modelControls.playAllAnimations();
             }
 
+            this.logEnvironmentIntensity();
+
             return modelControls;
         } finally {
             // Ensure loading screen is hidden whether success or failure
@@ -111,16 +156,33 @@ async loadModel(modelId) {
     }
 }
 
-    dispose() {
-        if (this.sceneManager) {
-            this.sceneManager.dispose();
-        }
-        if (this.postProcessing?.composer) {
-            this.postProcessing.composer.dispose();
-        }
-        if (this.modelLoader) {
-            this.modelLoader.clearCurrentModel();
-        }
-        this.initialized = false;
+dispose() {
+    if (this.sceneManager) {
+        this.sceneManager.dispose();
     }
+    if (this.postProcessing?.composer) {
+        this.postProcessing.composer.dispose();
+    }
+    if (this.modelLoader) {
+        this.modelLoader.clearCurrentModel();
+    }
+    // Add disposal of lighting system
+    if (this.lightingSystem) {
+        this.lightingSystem.dispose();
+    }
+    this.initialized = false;
+}
+
+// You can also add methods to control lighting settings
+updateLightingSettings(settings) {
+    if (this.lightingSystem) {
+        if (settings.shadowUpdateInterval) {
+            this.lightingSystem.shadowUpdateInterval = settings.shadowUpdateInterval;
+        }
+        if (settings.environmentIntensity !== undefined) {
+            this.lightingSystem.updateEnvironmentIntensity(settings.environmentIntensity);
+            console.log('Environment light intensity updated:', settings.environmentIntensity);
+        }
+    }
+}
 }

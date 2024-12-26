@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState } from 'react';
+import { materialTypes } from './MaterialTypeSelect';
 
 export const TextureContext = createContext(null);
 
 export const TextureProvider = ({ children }) => {
-  // Define all state variables at the beginning
   const [layers, setLayers] = useState([]);
   const [activeLayer, setActiveLayer] = useState(null);
-  const [activeWorkspace, setActiveWorkspace] = useState('colors'); // Define the state
+  const [activeWorkspace, setActiveWorkspace] = useState('colors');
   const [expandedSections, setExpandedSections] = useState(['colors']);
 
   const updateTransformation = (layerId, type, value) => {
@@ -19,6 +19,21 @@ export const TextureProvider = ({ children }) => {
               ...layer.transformations,
               ...value
             }
+          };
+        }
+        return layer;
+      })
+    );
+  };
+
+  const updateMaterialType = (layerId, materialType) => {
+    setLayers(prevLayers =>
+      prevLayers.map(layer => {
+        if (layer.id === layerId) {
+          return {
+            ...layer,
+            materialType,
+            materialProperties: materialTypes[materialType].properties
           };
         }
         return layer;
@@ -40,6 +55,7 @@ export const TextureProvider = ({ children }) => {
     activeLayer,
     setActiveLayer,
     updateTransformation,
+    updateMaterialType,
     activeWorkspace,
     setActiveWorkspace,
     expandedSections,
@@ -60,5 +76,3 @@ export const useTextureContext = () => {
   }
   return context;
 };
-
-export default TextureProvider;

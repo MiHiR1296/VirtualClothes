@@ -1,5 +1,7 @@
 import React from 'react';
 import { Eye, EyeOff, ChevronUp, ChevronDown, Trash2, Upload } from 'lucide-react';
+import { MaterialTypeSelect } from './MaterialTypeSelect';
+
 
 export default function LayerItem({
   layer,
@@ -10,7 +12,8 @@ export default function LayerItem({
   onSetActive,
   onMoveLayer,
   onDelete,
-  onOpacityChange
+  onOpacityChange,
+  onMaterialTypeChange
 }) {
   return (
     <div className="mb-2 bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
@@ -105,6 +108,12 @@ export default function LayerItem({
             className="w-full accent-blue-500"
           />
         </div>
+      
+        {/* Material Type Dropdown */}
+        <MaterialTypeSelect
+          value={layer.materialType}
+          onChange={(value) => onMaterialTypeChange(layer.id, value)}
+        />
       </div>
     </div>
   );

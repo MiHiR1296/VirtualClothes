@@ -156,6 +156,7 @@ export default function TextureLayerManager() {
       name: `Layer ${layers.length + 1}`,
       isActive: layers.length === 0,
       visible: true,
+      materialType: 'print',
       modelDirectory: window.currentModelDirectory,
       transformations: {
         offset: { x: 0, y: 0 },
@@ -280,6 +281,11 @@ export default function TextureLayerManager() {
             onMoveLayer={moveLayer}
             onDelete={deleteLayer}
             onOpacityChange={updateLayerOpacity}
+            onMaterialTypeChange={(id, type) => {  // Add this line
+              setLayers(prev => prev.map(layer =>
+                layer.id === id ? { ...layer, materialType: type } : layer
+              ));
+            }}
           />
         ))}
       </div>

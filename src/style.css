@@ -164,11 +164,11 @@ nav {
 }
 
 /* Buttons and Controls Styles */
-.animation-toggle-button {
+/* .animation-toggle-button {
     position: fixed;
     bottom: 20px;
     right: 350px;
-    z-index: 40; /* Below loading screen but above most content */
+    z-index: 40; 
     padding: 10px 20px;
     background-color: rgba(31, 41, 55, 0.9);
     color: white;
@@ -182,7 +182,7 @@ nav {
 
 .animation-toggle-button:hover {
     background-color: rgba(55, 65, 81, 0.9);
-}
+} */
 
 /* Menu Toggle Button */
 .menu-toggle {
