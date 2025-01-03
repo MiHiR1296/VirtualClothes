@@ -49,7 +49,7 @@ export const LIGHTING_CONFIG = {
     shadowCatcher: {
         enabled: true,
         size: 100,
-        opacity: 0.1,
+        opacity: 0.01,
         position: { x: 0, y: -0.001, z: 0 }
     },
     lights: {

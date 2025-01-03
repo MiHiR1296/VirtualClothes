@@ -12,32 +12,38 @@ const MODEL_PATHS = {
         hasAnimations: false
     },
     'model2': {
-        directory: '/Models/CrewNeck_HS_T-shirt_CasPants',
-        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'Metal.glb', 'CrewNeck_HS.glb', 'Pants.glb'],
-        useDefaultMaterials: false,
-        hasAnimations: true
+        directory: '/Models/Men_Crewneck-Halfsleve_T-shirt',
+        materials: ['Fronttex.glb','T-Shirt.glb' ],
+        useDefaultMaterials: true,
+        hasAnimations: false
     },
     'model3': {
-        directory: '/Models/VNeck_FS_CasPants',
-        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'V-Neck.glb', 'Pants.glb'],
-        useDefaultMaterials: false,
-        hasAnimations: true
+        directory: '/Models/Men_Vneck_FS_T-Shirt',
+        materials: ['Fronttex.glb','T-Shirt.glb' ],
+        useDefaultMaterials: true,
+        hasAnimations: false
     },
     'model4': {
-        directory: '/Models/Hoodie_Pants',
-        materials: ['Backtex.glb', 'Fronttex.glb', 'Zipper.glb', 'Avatar.glb', 'Metal.glb', 'Pants.glb', 'Threads.glb', 'Hoodie.glb'],
-        useDefaultMaterials: false,
-        hasAnimations: true
+        directory: '/Models/Men_Hoodie',
+        materials: [ 'Fronttex.glb', 'Zipper.glb', 'Plastic.glb' , 'Metal.glb', 'Threads.glb', 'Hoodie.glb'],
+        useDefaultMaterials: true,
+        hasAnimations: false
     },
     'model5': {
         directory: '/Models/Kids_Tracksuite',
-        materials: ['Fronttex.glb', 'Zipper.glb', 'Jacket.glb', 'Pants.glb'],
+        materials: ['Fronttex.glb', 'Zipper.glb', 'Tracksuite.glb', 'Metal.glb', 'Pants.glb'],
         useDefaultMaterials: true,
         hasAnimations: false
     },
     'model6': {
         directory: '/Models/Kids_Turtleneck',
-        materials: ['Fronttex.glb', 'TurtleNeck.glb'],
+        materials: ['Fronttex.glb', 'T-Shirt.glb'],
+        useDefaultMaterials: true,
+        hasAnimations: false
+    },
+    'model7': {
+        directory: '/Models/Kids_pajama',
+        materials: ['Fronttex.glb', 'T-Shirt.glb', 'Pants.glb'],
         useDefaultMaterials: true,
         hasAnimations: false
     }

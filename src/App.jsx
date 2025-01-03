@@ -57,11 +57,12 @@ export default function App() {
                 onChange={handleModelChange}
               >
                 <option value="model1">Polo T-shirt</option>
-                <option value="model2">CrewNeck HS</option>
-                <option value="model3">V-Neck FS</option>
+                <option value="model2">CrewNeck Half-Sleeve</option>
+                <option value="model3">V-Neck Full-Sleeve</option>
                 <option value="model4">Hoodie</option>
                 <option value="model5">Kids Tracksuite</option>
                 <option value="model6">Kids Turtleneck</option>
+                <option value="model7">Kids Pajama</option>
               </select>
               <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
