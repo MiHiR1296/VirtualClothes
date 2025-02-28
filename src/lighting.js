@@ -233,29 +233,79 @@ async loadHDRI(path, intensity) {
         texture.dispose();
         pmremGenerator.dispose();
 
+        this.initialCameraPosition = null;
+        this.initialControlsTarget = null;
+        this.initialModelRotation = null;
+
     } catch (error) {
         console.error('Error loading HDRI:', error);
     }
 }
 
-    rotateEnvironment(angle) {
-        this.environmentRotation = angle;
-
-        // Convert degrees to radians for offset calculation
-        const rotation = THREE.MathUtils.degToRad(angle);
-        
-        if (this.currentEnvironmentMap) {
-            // Calculate offset (dividing by 2π converts radians to 0-1 range)
-            const offset = -rotation / (2 * Math.PI);
-            this.currentEnvironmentMap.offset.x = offset;
-            this.currentEnvironmentMap.needsUpdate = true;
-
-            // If background is visible, update it too
-            if (this.showHDRIBackground) {
-                this.scene.background = this.currentEnvironmentMap;
-            }
-        }
+rotateEnvironment(angle) {
+    this.environmentRotation = angle;
+    
+    // Convert degrees to radians
+    const radians = THREE.MathUtils.degToRad(angle);
+    
+    // Find the camera and controls
+    const camera = this.scene.userData.camera;
+    const controls = this.scene.userData.controls;
+    if (!camera || !controls) {
+        console.warn("Camera or controls not found for rotation");
+        return;
     }
+    
+    // Find the model (cloth)
+    let modelGroup = null;
+    this.scene.traverse((object) => {
+        if (object.userData && object.userData.isLoadedModel) {
+            modelGroup = object;
+        }
+    });
+    
+    if (!modelGroup) {
+        console.warn("Model not found for rotation");
+        return;
+    }
+    
+    // Calculate the model's center as the pivot point
+    const modelCenter = new THREE.Vector3();
+    const modelBox = new THREE.Box3().setFromObject(modelGroup);
+    modelBox.getCenter(modelCenter);
+    
+    // Store initial positions if not already stored
+    if (!this.initialCameraPosition) {
+        this.initialCameraPosition = camera.position.clone();
+        this.initialControlsTarget = controls.target.clone();
+        this.initialModelRotation = modelGroup.rotation.y;
+    }
+    
+    // Calculate the initial relative camera position from the model center
+    const relativePosition = this.initialCameraPosition.clone().sub(modelCenter);
+    
+    // Rotate the camera around the model center
+    // Use negative radians so camera rotates in the same visual direction as the model
+    const rotatedPosition = relativePosition.clone();
+    rotatedPosition.applyAxisAngle(new THREE.Vector3(0, 1, 0), -radians);
+    rotatedPosition.add(modelCenter);
+    
+    // Update camera position
+    camera.position.copy(rotatedPosition);
+    
+    // Keep the camera's target on the model center
+    controls.target.copy(modelCenter);
+    
+    // Rotate the model in the same direction for consistent movement
+    modelGroup.rotation.y = this.initialModelRotation - radians;
+    
+    // Update the controls
+    controls.update();
+    
+    console.log("Rotated camera and model around model center:", angle, "degrees");
+}
+
+
 
     toggleBackground(show) {
         this.showHDRIBackground = show;

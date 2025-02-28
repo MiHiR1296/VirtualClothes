@@ -33,10 +33,14 @@ export class ThreeApplication {
             this.renderer = renderer;
             this.controls = controls;
 
+            this.scene.userData.camera = this.camera;
+            this.scene.userData.controls = this.controls;
+
             this.lightingSystem = new LightingSystem(scene, renderer);
             this.materialManager = new MaterialManager();
             this.modelLoader = new ModelLoader(scene, this.loadingManager, this.sceneManager);
             this.postProcessing = new PostProcessing(scene, camera, renderer);
+            
 
             this.eventHandler = new EventHandler(
                 scene,
@@ -128,6 +132,22 @@ export class ThreeApplication {
             if (modelControls) {
                 modelControls.playAllAnimations();
             }
+            // Apply any existing HDRI rotation after loading the model
+                if (this.lightingSystem && this.lightingSystem.environmentRotation !== 0) {
+                    // Re-apply the current rotation
+                    this.lightingSystem.rotateEnvironment(this.lightingSystem.environmentRotation);
+                }
+
+                if (this.lightingSystem) {
+                    this.lightingSystem.initialCameraPosition = null;
+                    this.lightingSystem.initialControlsTarget = null;
+                    this.lightingSystem.initialModelRotation = null;
+                    
+                    // Re-apply any existing rotation with the new model
+                    if (this.lightingSystem.environmentRotation !== 0) {
+                        this.lightingSystem.rotateEnvironment(this.lightingSystem.environmentRotation);
+                    }
+                }
 
             return modelControls;
 
