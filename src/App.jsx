@@ -7,6 +7,8 @@ import UVEditorContainer from './UVEditorContainer';
 import ControlsTooltip from './ControlsTooltip';
 import { getModelsByCategory } from './modelLoader';
 import HDRIControls from './HDRIControls';
+import TechPack from './TechPack';
+import PantoneColorPicker from './PantoneColorPicker';
 
 // Categorized Model Select Component
 const CategorizedModelSelect = ({ selectedModel, onChange }) => {
@@ -64,6 +66,11 @@ export default function App() {
             setSelectedModelMetalness(metalness);
           }
         };
+        
+        // Make MODEL_PATHS accessible globally for techpack generation
+        import('./modelLoader.js').then(module => {
+          window.MODEL_PATHS = module.MODEL_PATHS;
+        });
       } catch (error) {
         console.error('Failed to initialize application:', error);
       }
@@ -160,7 +167,7 @@ export default function App() {
           {/* Sidebar */}
           <div 
             className={`fixed right-0 top-14 bottom-0 w-80 bg-gray-800 border-l border-gray-700 
-                      transform transition-transform duration-300 ease-in-out z-10
+                      transform transition-transform duration-300 ease-in-out z-10 overflow-y-auto
                       ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
           >
             <div className="h-full overflow-y-auto p-6 space-y-6">
@@ -210,13 +217,27 @@ export default function App() {
                   
                   {/* Color Picker */}
                   <div>
-                    <label className="block mb-2 text-sm">Color</label>
-                    <input 
-                      type="color" 
-                      id="colorPicker"
-                      className="w-full h-10 rounded bg-gray-700 border border-gray-600" 
-                    />
-                  </div>
+                      <label className="block mb-2 text-sm">Color</label>
+                      <PantoneColorPicker 
+                        onColorSelect={(color) => {
+                          if (window.selectedModelPart) {
+                            const material = window.selectedModelPart.material;
+                            // Store exact color in userData for consistent color picking
+                            window.selectedModelPart.userData.exactColor = color;
+                            // Update actual material color
+                            material.color.set(color);
+                            material.needsUpdate = true;
+                            // Update color picker UI
+                            document.getElementById('colorPicker').value = color;
+                          }
+                        }} 
+                      />
+                      <input 
+                        type="color" 
+                        id="colorPicker"
+                        className="w-full h-10 rounded bg-gray-700 border border-gray-600" 
+                      />
+                    </div>
 
                   {/* Advanced Settings */}
                   <div>
@@ -281,6 +302,19 @@ export default function App() {
               {/* Texture Layer Manager */}
               <div id="materialSelect-container"></div>
               <TextureLayerManager />
+              
+              {/* TechPack Generator - Moved to bottom */}
+              {appRef.current && (
+                <TechPack 
+                  selectedModel={selectedModel}
+                  selectedMaterial={selectedMaterial}
+                  materialManager={appRef.current.materialManager}
+                  renderer={appRef.current.renderer}
+                  scene={appRef.current.scene}
+                  camera={appRef.current.camera}
+                  controls={appRef.current.controls}
+                />
+              )}
             </div>
           </div>
         </div>
