@@ -1,12 +1,34 @@
 import React from 'react';
 
-export const NORMAL_MAP_PATHS = {
+// Change from const assertion to explicit type
+export const NORMAL_MAP_PATHS: {
+  PRINT: string;
+  EMBROIDERY: string;
+  GENERIC: string;
+} = {
   PRINT: './Textures/Normals/print_normal.png',
   EMBROIDERY: './Textures/Normals/embroidery_normal.png',
   GENERIC: './Textures/Normals/generic_normal.png'
-} as const;
+};
 
-export const materialTypes = {
+// Change materialTypes to use explicit typing instead of const assertion
+export const materialTypes: {
+  [key: string]: {
+    name: string;
+    properties: {
+      roughness: number;
+      metalness: number;
+      normalScale: number;
+      clearcoat: number;
+      clearcoatRoughness?: number;
+      useModelNormalMap?: boolean;
+      sheen?: number;
+      sheenRoughness?: number;
+      normalMap?: string;
+      defaultDetailScale?: number;
+    }
+  }
+} = {
   base: {
     name: "Base",
     properties: {
@@ -54,10 +76,11 @@ export const materialTypes = {
       defaultDetailScale: 1.0
     }
   }
-} as const;
+};
 
+// Use a more specific type for the 'value' prop
 type MaterialTypeProps = {
-  value: keyof typeof materialTypes;
+  value: string; // Change from keyof typeof materialTypes to string
   onChange: (value: string) => void;
   onDetailScaleChange?: (value: number) => void;
   detailScale?: number;
@@ -65,6 +88,7 @@ type MaterialTypeProps = {
   showDetailScaleOnly?: boolean;
 };
 
+// Export the component as a named export
 export const MaterialTypeSelect: React.FC<MaterialTypeProps> = ({ 
   value, 
   onChange,
@@ -116,3 +140,6 @@ export const MaterialTypeSelect: React.FC<MaterialTypeProps> = ({
     </div>
   );
 };
+
+// Add a default export that just re-exports the component
+export default MaterialTypeSelect;

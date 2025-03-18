@@ -188,7 +188,7 @@ export class ModelLoader {
         return `${this.basePath}${cleanPath}`;
     }
     
-    async loadModelPart(url, modelConfig, mixer, materialSets = null) {
+    async  loadModelPart(url, modelConfig, mixer, materialSets = null) {
         return new Promise((resolve, reject) => {
             const fullPath = this.getFullPath(url);
             console.log('Loading model from:', fullPath);
@@ -197,6 +197,9 @@ export class ModelLoader {
                 fullPath,
                 async (gltf) => {
                     try {
+                        // Store the filename in userData for reference
+                        gltf.userData = { fileName: url.split('/').pop() };
+                        
                         await this.processLoadedModel(gltf, modelConfig, materialSets, mixer);
                         resolve(gltf);
                     } catch (error) {
@@ -211,9 +214,9 @@ export class ModelLoader {
             );
         });
     }
+    
 
-
-    async loadModels(materialManager, selectedModel = 'men_polo_hs') { // Changed default to 'men_polo_hs'
+    async loadModels(materialManager, selectedModel = 'men_polo_hs') {
         try {
             const modelConfig = MODEL_PATHS[selectedModel];
             if (!modelConfig) {
@@ -224,6 +227,8 @@ export class ModelLoader {
             const modelDirectory = `./${modelConfig.directory}`;
             console.log('Loading model from directory:', modelDirectory);
             
+            // Set global variables for access by other components
+            window.currentModel = selectedModel;
             window.currentModelDirectory = modelDirectory;
             
             this.loadingManager.startLoading(modelConfig.materials.length);
@@ -257,52 +262,126 @@ export class ModelLoader {
             if (!this.validateModelLoaded()) {
                 throw new Error('Model failed to load properly');
             }
+            
+            // Calculate center and update camera
+            const center = this.sceneManager.calculateSceneCenter();
+            this.sceneManager.updateControlsTarget(center);
+            
+            // Dispatch a custom event to notify other components that model has changed
+            window.dispatchEvent(new CustomEvent('model-loaded', {
+                detail: {
+                    modelId: selectedModel,
+                    modelConfig: modelConfig,
+                    parts: modelConfig.materials
+                        .map(material => material.replace('.glb', ''))
+                        .filter(part => !part.includes('Fronttex') && !part.includes('Backtex')),
+                    textureParts: modelConfig.textureMeshNames || []
+                }
+            }));
+            
+            console.log('Dispatched model-loaded event with parts:', 
+                modelConfig.materials
+                    .map(material => material.replace('.glb', ''))
+                    .filter(part => !part.includes('Fronttex') && !part.includes('Backtex')),
+                'and texture parts:',
+                modelConfig.textureMeshNames || []
+            );
     
             return this.modelControls;
-    
         } catch (error) {
             console.error('Error in loadModels:', error);
             this.loadingManager.updateLog(`Error: ${error.message}`);
             throw error;
+        } finally {
+            this.loadingManager.hide();
         }
     }
-    async loadModelPart(url, modelConfig, mixer, materialSets = null) {
-        return new Promise((resolve, reject) => {
-            if (!url) {
-                reject(new Error('Invalid model URL'));
-                return;
-            }
+    // async loadModelPart(url, modelConfig, mixer, materialSets = null) {
+    //     return new Promise((resolve, reject) => {
+    //         if (!url) {
+    //             reject(new Error('Invalid model URL'));
+    //             return;
+    //         }
     
-            console.log('Attempting to load model from:', url);
+    //         console.log('Attempting to load model from:', url);
     
-            this.gltfLoader.load(
-                url,
-                async (gltf) => {
-                    try {
-                        await this.processLoadedModel(gltf, modelConfig, materialSets, mixer);
-                        resolve(gltf);
-                    } catch (error) {
-                        console.error('Error processing loaded model:', error);
-                        reject(error);
+    //         this.gltfLoader.load(
+    //             url,
+    //             async (gltf) => {
+    //                 try {
+    //                     await this.processLoadedModel(gltf, modelConfig, materialSets, mixer);
+    //                     resolve(gltf);
+    //                 } catch (error) {
+    //                     console.error('Error processing loaded model:', error);
+    //                     reject(error);
+    //                 }
+    //             },
+    //             (progress) => {
+    //                 const percent = (progress.loaded / progress.total * 100).toFixed(1);
+    //                 this.loadingManager.updateLog(`Loading ${url.split('/').pop()}: ${percent}%`);
+    //             },
+    //             (error) => {
+    //                 console.error('Error loading model:', error);
+    //                 reject(error);
+    //             }
+    //         );
+    //     });
+    // }
+
+    extractTextureMeshNames(gltf) {
+        const meshNames = [];
+        
+        // Traverse the loaded model to find texture meshes and extract their names
+        gltf.scene.traverse((object) => {
+            if (object.isMesh) {
+                const name = object.name;
+                // Check if this mesh is inside a Fronttex or Backtex model
+                if (name.includes('Fronttex') || name.includes('Backtex')) {
+                    // Look for a name format like 'Outside_Fronttex' or similar
+                    if (name.includes('_')) {
+                        const parts = name.split('_');
+                        if (parts.length > 1) {
+                            const partName = parts[0]; // The part name (e.g., 'Outside')
+                            
+                            // Create a unique texture part name
+                            const texturePart = `${partName}_tex`;
+                            if (!meshNames.includes(texturePart)) {
+                                meshNames.push(texturePart);
+                            }
+                        }
+                    } else {
+                        // For meshes without underscore, use the full name
+                        if (!meshNames.includes(name)) {
+                            meshNames.push(name);
+                        }
                     }
-                },
-                (progress) => {
-                    const percent = (progress.loaded / progress.total * 100).toFixed(1);
-                    this.loadingManager.updateLog(`Loading ${url.split('/').pop()}: ${percent}%`);
-                },
-                (error) => {
-                    console.error('Error loading model:', error);
-                    reject(error);
                 }
-            );
+            }
         });
+        
+        return meshNames;
     }
+    
     async processLoadedModel(gltf, modelConfig, materialSets, mixer) {
+        // Extract texture mesh names first, if this is a texture model
+        let textureMeshNames = [];
+        const fileName = gltf.userData?.fileName || '';
+        if (fileName.includes('Fronttex') || fileName.includes('Backtex')) {
+            textureMeshNames = this.extractTextureMeshNames(gltf);
+            
+            // Store these names in the model config for later use
+            if (!modelConfig.textureMeshNames) {
+                modelConfig.textureMeshNames = [];
+            }
+            modelConfig.textureMeshNames.push(...textureMeshNames);
+        }
+    
+        // Continue with existing processing
         gltf.scene.traverse(async (object) => {
             if (object.isMesh) {
                 object.geometry.computeVertexNormals();
                 object.userData.isImported = true;
-
+    
                 if (object.name.includes('Fronttex') || object.name.includes('Backtex')) {
                     await this.createTextureMaterial(object);
                 } else if (modelConfig.useOptimizedMaterials && materialSets) {
@@ -314,7 +393,7 @@ export class ModelLoader {
                 } else {
                     await this.createDefaultMaterial(object);
                 }
-
+    
                 object.castShadow = true;
                 object.receiveShadow = true;
             }

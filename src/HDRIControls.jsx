@@ -46,7 +46,10 @@ const HDRIControls = ({
         const defaultIntensity = HDRI_OPTIONS[hdriId].defaultIntensity;
         setSelectedHDRI(hdriId);
         setIntensity(defaultIntensity);
-        onHDRIChange(HDRI_OPTIONS[hdriId].path, defaultIntensity); // Pass intensity along with path
+        
+        // Explicitly pass the default intensity for this HDRI, not just the path
+        console.log(`Loading HDRI: ${hdriId} with intensity: ${defaultIntensity}`);
+        onHDRIChange(HDRI_OPTIONS[hdriId].path, defaultIntensity);
     };
 
     const handleRotationChange = (e) => {

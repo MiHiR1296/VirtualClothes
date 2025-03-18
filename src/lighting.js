@@ -33,8 +33,8 @@ const envMapShader = {
 
 export const LIGHTING_CONFIG = {
     renderer: {
-        toneMapping: 'ACESFilmicToneMapping',
-        toneMappingExposure: 0.1,
+        toneMapping: 'CineonToneMapping',
+        toneMappingExposure: 1.0,
         shadowMapType: 'PCFSoftShadowMap',
         physicallyCorrectLights: true,
         outputEncoding: 'sRGBEncoding',
@@ -82,7 +82,7 @@ export const LIGHTING_CONFIG = {
         },
         rimLight: {
             type: 'SpotLight',
-            enabled: true,
+            enabled: false,
             position: { x: -15, y: 18, z: -6 },
             intensity: 300,
             color: 0xfffaee,
@@ -100,7 +100,7 @@ export const LIGHTING_CONFIG = {
         },
         fillLight3: {
             type: 'SpotLight',
-            enabled: true,
+            enabled: false,
             position: { x: -10, y: 5, z: -14 },
             intensity: 500,
             color: 0xfffdfa,
@@ -132,15 +132,37 @@ export class LightingSystem {
         this.background = null;
         this.currentHDRI = null;
         this.environmentRotation = 0;
-        this.defaultBackground = new THREE.Color(0x1a1a1a); // Dark gray
+        this.defaultBackground = new THREE.Color(0x1a1a1a);
         this.showHDRIBackground = false;
         this.currentEnvironmentMap = null;
+        this.currentIntensity = LIGHTING_CONFIG.environmentMap.intensity; // Store the current intensity
         
         this.setupRenderer();
-        this.initializeEnvironmentMap(0.05);
+        this.initializeEnvironmentMap(this.currentIntensity); // Use the stored intensity
         this.setupShadowCatcher();
         this.setupLights();
     }
+
+    debugLightingState() {
+        console.log('=== LIGHTING SYSTEM DEBUG ===');
+        console.log('Current Intensity:', this.currentIntensity);
+        console.log('Config Intensity:', LIGHTING_CONFIG.environmentMap.intensity);
+        console.log('Config envMapIntensity:', LIGHTING_CONFIG.environmentMap.envMapIntensity);
+        console.log('Environment Map:', this.scene.environment ? 'Loaded' : 'Not loaded');
+        console.log('Environment Rotation:', this.environmentRotation);
+        console.log('Show HDRI Background:', this.showHDRIBackground);
+        
+        // Check a sample of materials in the scene
+        let materialCount = 0;
+        this.scene.traverse((object) => {
+          if (object.material && materialCount < 5) {
+            console.log(`Material ${object.name} envMapIntensity:`, 
+                        object.material.envMapIntensity);
+            materialCount++;
+          }
+        });
+        console.log('=========================');
+      }
     
     createGradientBackground() {
         const canvas = document.createElement('canvas');
@@ -187,8 +209,9 @@ export class LightingSystem {
         return LIGHTING_CONFIG.environmentMap.envMapIntensity;
     }
 
-    // In lighting.js - Update loadHDRI method to accept intensity parameter
-async loadHDRI(path, intensity) {
+    
+// Update the loadHDRI method to properly store and apply the intensity
+ async loadHDRI(path, intensity) {
     if (!path) return;
 
     try {
@@ -220,14 +243,33 @@ async loadHDRI(path, intensity) {
             this.scene.background = envMap;
         }
 
-        // Apply any existing rotation
+        // Apply intensity with priority:
+        // 1. Use the provided intensity parameter if available
+        // 2. Use the intensity from the HDRI_OPTIONS for this specific HDRI
+        // 3. Fall back to current intensity if available
+        // 4. Use the default intensity from config
+
+        // Try to find the HDRI option based on the path to get its default intensity
+        let hdriDefaultIntensity = undefined;
+        Object.values(HDRI_OPTIONS).forEach(option => {
+            if (path.includes(option.path) || option.path.includes(path)) {
+                hdriDefaultIntensity = option.defaultIntensity;
+            }
+        });
+        
+        // Determine which intensity to use, with priority
+        const intensityToUse = intensity !== undefined ? intensity : 
+                             hdriDefaultIntensity !== undefined ? hdriDefaultIntensity :
+                             this.currentIntensity !== undefined ? this.currentIntensity :
+                             LIGHTING_CONFIG.environmentMap.intensity;
+                             
+        // Store and apply the determined intensity
+        this.currentIntensity = intensityToUse;
+        this.updateEnvironmentMapIntensity(intensityToUse);
+
+        // Apply any existing rotation after setting the new environment
         if (this.environmentRotation) {
             this.rotateEnvironment(this.environmentRotation);
-        }
-
-        // Apply intensity if provided
-        if (intensity !== undefined) {
-            this.updateEnvironmentMapIntensity(intensity);
         }
 
         texture.dispose();
@@ -236,6 +278,8 @@ async loadHDRI(path, intensity) {
         this.initialCameraPosition = null;
         this.initialControlsTarget = null;
         this.initialModelRotation = null;
+        
+        console.log(`HDRI loaded with intensity: ${intensityToUse}`);
 
     } catch (error) {
         console.error('Error loading HDRI:', error);
@@ -322,83 +366,115 @@ rotateEnvironment(angle) {
 
     
     // Update the existing initializeEnvironmentMap method
-    initializeEnvironmentMap(intensity) {
-        if (!LIGHTING_CONFIG.environmentMap.enabled) {
-            this.scene.environment = null;
-            this.scene.background = null;
-            return;
-        }
-    
-        const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-        pmremGenerator.compileEquirectangularShader();
-    
-        new EXRLoader().load(
-            LIGHTING_CONFIG.environmentMap.path,
-            (texture) => {
-                texture.mapping = THREE.EquirectangularReflectionMapping;
-                const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-                
-                // Store the environment map first
-                this.currentEnvironmentMap = envMap;
-                
-                // Set as environment always
-                this.scene.environment = envMap;
-                
-                // Only set as background if showHDRIBackground is true
-                if (this.showHDRIBackground) {
-                    this.scene.background = envMap;
-                } else {
-                    // Use gradient background as fallback
-                    this.scene.background = this.createGradientBackground();
-                }
-                
-                // Set initial intensity
-                this.updateEnvironmentMapIntensity(intensity);
-    
-                // Store the texture for later use
-                this.currentHDRI = texture;
-                this.environmentRotation = 0;
-    
-                texture.dispose();
-                pmremGenerator.dispose();
-                
-                console.log("Environment map initialized successfully");
-            }
-        );
+   
+initializeEnvironmentMap(intensity) {
+    if (!LIGHTING_CONFIG.environmentMap.enabled) {
+        this.scene.environment = null;
+        this.scene.background = null;
+        return;
     }
+    
+    // Determine which intensity to use (provided, or from config)
+    const intensityToUse = intensity !== undefined ? intensity : LIGHTING_CONFIG.environmentMap.intensity;
+    
+    // Store the intensity we'll be using
+    this.currentIntensity = intensityToUse;
+    console.log(`Initializing environment with intensity: ${intensityToUse}`);
 
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
 
-    updateEnvironmentMapIntensity(value) {
-        // Update config
-        LIGHTING_CONFIG.environmentMap.envMapIntensity = value;
-        
-        // Update all materials in the scene
-        this.scene.traverse((object) => {
-            if (object.isMaterial) {
-                object.envMapIntensity = value;
-                object.needsUpdate = true;
+    new EXRLoader().load(
+        LIGHTING_CONFIG.environmentMap.path,
+        (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+            
+            // Store the environment map first
+            this.currentEnvironmentMap = envMap;
+            
+            // Set as environment always
+            this.scene.environment = envMap;
+            
+            // Only set as background if showHDRIBackground is true
+            if (this.showHDRIBackground) {
+                this.scene.background = envMap;
+            } else {
+                // Use gradient background as fallback
+                this.scene.background = this.createGradientBackground();
             }
-            if (object.material) {
-                if (Array.isArray(object.material)) {
-                    object.material.forEach(mat => {
+            
+            // Set initial intensity using the stored value
+            this.updateEnvironmentMapIntensity(this.currentIntensity);
+
+            // Store the texture for later use
+            this.currentHDRI = texture;
+            this.environmentRotation = 0;
+
+            texture.dispose();
+            pmremGenerator.dispose();
+            
+            console.log("Environment map initialized successfully with intensity:", this.currentIntensity);
+        }
+    );
+}
+
+
+
+updateEnvironmentMapIntensity(value) {
+    // Safety check for invalid values
+    if (value === undefined || value === null || isNaN(value)) {
+        console.warn('Invalid intensity value:', value, 'using default:', LIGHTING_CONFIG.environmentMap.intensity);
+        value = LIGHTING_CONFIG.environmentMap.intensity;
+    }
+    
+    // Store the current intensity
+    this.currentIntensity = value;
+    
+    // Update config
+    LIGHTING_CONFIG.environmentMap.envMapIntensity = value;
+    LIGHTING_CONFIG.environmentMap.intensity = value;
+    
+    // Log current state for debugging
+    console.log(`Updating environment map intensity to ${value}`);
+    
+    // Update all materials in the scene
+    let updatedMaterials = 0;
+    this.scene.traverse((object) => {
+        if (object.isMaterial) {
+            object.envMapIntensity = value;
+            object.needsUpdate = true;
+            updatedMaterials++;
+        }
+        if (object.material) {
+            if (Array.isArray(object.material)) {
+                object.material.forEach(mat => {
+                    if (mat.envMapIntensity !== undefined) {
                         mat.envMapIntensity = value;
                         mat.needsUpdate = true;
-                    });
-                } else {
-                    object.material.envMapIntensity = value;
-                    object.material.needsUpdate = true;
-                }
+                        updatedMaterials++;
+                    }
+                });
+            } else if (object.material.envMapIntensity !== undefined) {
+                object.material.envMapIntensity = value;
+                object.material.needsUpdate = true;
+                updatedMaterials++;
             }
-        });
-
-        // Update the environment map if it exists
-        if (this.envMap) {
-            this.envMap.intensity = value;
         }
+    });
 
-        console.log('Environment map intensity updated:', value);
+    // Update the environment map if it exists
+    if (this.envMap) {
+        this.envMap.intensity = value;
+    }
+    
+    if (this.scene.environment) {
+        // For Three.js environment maps that support intensity
+        this.scene.environment.intensity = value;
     }
 
+    console.log(`Environment map intensity updated: ${value} (${updatedMaterials} materials updated)`);
+}
   
     createSpotLight(config) {
         const light = new THREE.SpotLight(config.color, config.intensity);

@@ -36,6 +36,12 @@ export class ThreeApplication {
             this.scene.userData.camera = this.camera;
             this.scene.userData.controls = this.controls;
 
+            // Expose these objects to the global scope for the texture manipulator
+            window.scene = scene;
+            window.camera = camera;
+            window.renderer = renderer;
+            window.controls = controls;
+
             this.lightingSystem = new LightingSystem(scene, renderer);
             this.materialManager = new MaterialManager();
             this.modelLoader = new ModelLoader(scene, this.loadingManager, this.sceneManager);
@@ -92,65 +98,74 @@ export class ThreeApplication {
             if (!modelId) {
                 throw new Error('No model ID provided');
             }
-
+    
             if (!MODEL_PATHS[modelId]) {
                 throw new Error(`Invalid model ID: ${modelId}. Available models are: ${Object.keys(MODEL_PATHS).join(', ')}`);
             }
-
+    
             if (!this.initialized) {
                 await this.initPromise;
             }
-
+    
             // Don't reload if it's the same model
             if (this.currentModelId === modelId && this.loadedModels.has(modelId)) {
                 console.log('Model already loaded:', modelId);
                 return this.loadedModels.get(modelId);
             }
-
+    
             this.loadingManager.show();
             
             // Clear previous model's resources if switching models
             if (this.currentModelId && this.currentModelId !== modelId) {
                 await this.clearPreviousModel();
             }
-
+    
             this.currentModelId = modelId;
-
+    
             console.log('Loading model:', modelId);
             const modelControls = await this.modelLoader.loadModels(
                 this.materialManager,
                 modelId
             );
-
+    
             // Cache the loaded model
             this.loadedModels.set(modelId, modelControls);
-
+    
             const center = this.sceneManager.calculateSceneCenter();
             this.sceneManager.updateControlsTarget(center);
             this.sceneManager.updateCameraForModel(this.modelLoader.loadedModelGroup);
-
+    
             if (modelControls) {
                 modelControls.playAllAnimations();
             }
-            // Apply any existing HDRI rotation after loading the model
-                if (this.lightingSystem && this.lightingSystem.environmentRotation !== 0) {
-                    // Re-apply the current rotation
-                    this.lightingSystem.rotateEnvironment(this.lightingSystem.environmentRotation);
+            
+            // Store current lighting values before applying them to the new model
+            let currentEnvMapIntensity = null;
+            let currentEnvMapRotation = null;
+            
+            if (this.lightingSystem) {
+                // Store current values
+                currentEnvMapIntensity = this.lightingSystem.currentIntensity;
+                currentEnvMapRotation = this.lightingSystem.environmentRotation;
+                
+                // Reset variables to ensure proper reapplication
+                this.lightingSystem.initialCameraPosition = null;
+                this.lightingSystem.initialControlsTarget = null;
+                this.lightingSystem.initialModelRotation = null;
+                
+                // Apply environment rotation if needed
+                if (currentEnvMapRotation !== 0) {
+                    this.lightingSystem.rotateEnvironment(currentEnvMapRotation);
                 }
-
-                if (this.lightingSystem) {
-                    this.lightingSystem.initialCameraPosition = null;
-                    this.lightingSystem.initialControlsTarget = null;
-                    this.lightingSystem.initialModelRotation = null;
-                    
-                    // Re-apply any existing rotation with the new model
-                    if (this.lightingSystem.environmentRotation !== 0) {
-                        this.lightingSystem.rotateEnvironment(this.lightingSystem.environmentRotation);
-                    }
+                
+                // Apply environment intensity
+                if (currentEnvMapIntensity !== null) {
+                    this.lightingSystem.updateEnvironmentMapIntensity(currentEnvMapIntensity);
                 }
-
+            }
+    
             return modelControls;
-
+    
         } catch (error) {
             console.error('Error in ThreeApplication loadModel:', error);
             this.loadingManager.updateLog(`Error loading model: ${error.message}`);
@@ -203,8 +218,13 @@ export class ThreeApplication {
             // Add other lighting settings here if needed
         }
     }
-
     dispose() {
+        // Clean up global references
+        window.scene = null;
+        window.camera = null;
+        window.renderer = null;
+        window.controls = null;
+        
         this.clearAllResources();
         
         if (this.sceneManager) {

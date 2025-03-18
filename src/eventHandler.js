@@ -20,6 +20,9 @@ export class EventHandler {
         // Initialize global variable
         window.selectedModelPart = null;
         window.findTextureObjects = this.findTextureObjects.bind(this);
+        
+        // Flag to check if texture edit mode is active
+        this.isTextureEditModeActive = false;
 
         this.setupEventListeners();
     }
@@ -31,6 +34,11 @@ export class EventHandler {
         this.setupClickHandler();
         this.setupKeyboardHandler();
         this.setupSidebar();
+        
+        // Add listener for texture edit mode changes
+        window.addEventListener('texture-edit-mode-change', (event) => {
+            this.isTextureEditModeActive = event.detail.active;
+        });
     }
 
     setupWorkspaceControls() {
@@ -67,46 +75,74 @@ export class EventHandler {
         this.setupModelMaterialControls();
     }
 
-    setupModelMaterialControls() {
-        const propertiesContainer = document.getElementById('workspace-colors');
-        if (propertiesContainer) {
-            // Remove existing roughness and metalness sliders if they exist
-            const existingRoughnessSlider = document.getElementById('modelPartRoughnessSlider');
-            const existingMetalnessSlider = document.getElementById('modelPartMetalnessSlider');
-            if (existingRoughnessSlider) existingRoughnessSlider.parentElement.remove();
-            if (existingMetalnessSlider) existingMetalnessSlider.parentElement.remove();
     
-            // Create roughness slider
-            const roughnessSlider = document.createElement('input');
-            roughnessSlider.type = 'range';
-            roughnessSlider.min = '0';
-            roughnessSlider.max = '1';
-            roughnessSlider.step = '0.01';
-            roughnessSlider.id = 'modelPartRoughnessSlider';
-    
-            // Create metalness slider
-            const metalSlider = document.createElement('input');
-            metalSlider.type = 'range';
-            metalSlider.min = '0';
-            metalSlider.max = '1';
-            metalSlider.step = '0.01';
-            metalSlider.id = 'modelPartMetalnessSlider';
-    
-            // Add event listeners for roughness slider
-            roughnessSlider.addEventListener('input', (e) => {
-                if (window.selectedModelPart && !this.isTextureMesh(window.selectedModelPart)) {
-                    window.selectedModelPart.material.roughness = parseFloat(e.target.value);
-                    window.selectedModelPart.material.needsUpdate = true;
-                }
-            });
-    
-            // Add event listeners for metalness slider
-            metalSlider.addEventListener('input', (e) => {
-                if (window.selectedModelPart && !this.isTextureMesh(window.selectedModelPart)) {
-                    window.selectedModelPart.material.metalness = parseFloat(e.target.value);
-                    window.selectedModelPart.material.needsUpdate = true;
-                }
-            });
+setupModelMaterialControls() {
+    const propertiesContainer = document.getElementById('workspace-colors');
+    if (propertiesContainer) {
+        // Remove existing roughness and metalness sliders if they exist
+        const existingRoughnessSlider = document.getElementById('modelPartRoughnessSlider');
+        const existingMetalnessSlider = document.getElementById('modelPartMetalnessSlider');
+        if (existingRoughnessSlider) existingRoughnessSlider.parentElement.remove();
+        if (existingMetalnessSlider) existingMetalnessSlider.parentElement.remove();
+
+        // Create roughness slider
+        const roughnessSlider = document.createElement('input');
+        roughnessSlider.type = 'range';
+        roughnessSlider.min = '0';
+        roughnessSlider.max = '1';
+        roughnessSlider.step = '0.01';
+        roughnessSlider.id = 'modelPartRoughnessSlider';
+
+        // Create metalness slider
+        const metalSlider = document.createElement('input');
+        metalSlider.type = 'range';
+        metalSlider.min = '0';
+        metalSlider.max = '1';
+        metalSlider.step = '0.01';
+        metalSlider.id = 'modelPartMetalnessSlider';
+
+        // Add event listeners for roughness slider
+        metalSlider.addEventListener('input', (e) => {
+            if (window.selectedModelPart && !this.isTextureMesh(window.selectedModelPart)) {
+              const metalValue = parseFloat(e.target.value);
+              
+              // Use the global function to ensure consistent updates
+              if (window.updateSelectedModelMaterial) {
+                const currentRoughness = window.selectedModelPart.userData.exactRoughness || 
+                                        window.selectedModelPart.material.roughness;
+                window.updateSelectedModelMaterial(currentRoughness, metalValue);
+              } else {
+                // Fallback if global function doesn't exist
+                window.selectedModelPart.material.metalness = metalValue;
+                window.selectedModelPart.userData.exactMetalness = metalValue;
+                window.selectedModelPart.material.needsUpdate = true;
+              }
+              
+              document.getElementById('modelMetalnessValue').textContent = metalValue.toFixed(2);
+              console.log('Setting metalness to:', metalValue, 'on object:', window.selectedModelPart.name);
+            }
+          });
+          
+          // And update the roughnessSlider similarly:
+          roughnessSlider.addEventListener('input', (e) => {
+            if (window.selectedModelPart && !this.isTextureMesh(window.selectedModelPart)) {
+              const roughnessValue = parseFloat(e.target.value);
+              
+              // Use the global function to ensure consistent updates
+              if (window.updateSelectedModelMaterial) {
+                const currentMetalness = window.selectedModelPart.userData.exactMetalness || 
+                                        window.selectedModelPart.material.metalness;
+                window.updateSelectedModelMaterial(roughnessValue, currentMetalness);
+              } else {
+                // Fallback if global function doesn't exist
+                window.selectedModelPart.material.roughness = roughnessValue;
+                window.selectedModelPart.userData.exactRoughness = roughnessValue;
+                window.selectedModelPart.material.needsUpdate = true;
+              }
+              
+              document.getElementById('modelRoughnessValue').textContent = roughnessValue.toFixed(2);
+            }
+          });
     
             // Create containers for sliders
             const roughnessContainer = document.createElement('div');
@@ -222,6 +258,11 @@ export class EventHandler {
 
     setupClickHandler() {
         this.renderer.domElement.addEventListener('click', (event) => {
+            // Skip if texture edit mode is active
+            if (this.isTextureEditModeActive) {
+                return;
+            }
+            
             if (event.target.closest('.sidebar') || event.target.closest('.controls')) {
                 return;
             }
@@ -268,25 +309,49 @@ export class EventHandler {
     }
 
     isSelectableObject(object) {
+        // With the new naming convention, we can simply check if the name starts with "Fronttex_"
+        if (object.name.startsWith("Fronttex_")) {
+            return false;
+        }
+        
+        // Also check for traditional "Fronttex" and "Backtex" naming that might still exist
+        if (object.name.includes("Fronttex") || object.name.includes("Backtex")) {
+            return false;
+        }
+        
+        // The original remaining conditions
         return (
             object.isMesh && 
-            !object.name.includes("Fronttex") && 
-            !object.name.includes("Backtex") &&
             object.material.type !== 'ShadowMaterial' &&
             object.userData.isImported
         );
     }
 
     findTextureObjects() {
-        const textureObjects = [];
-        this.scene.traverse((object) => {
-            if (object.isMesh && (object.name.includes("Fronttex") || object.name.includes("Backtex"))) {
+    const textureObjects = [];
+    
+    // The new naming convention makes this much simpler
+    this.scene.traverse((object) => {
+        if (object.isMesh) {
+            // Check for the new naming convention
+            if (object.name.startsWith("Fronttex_")) {
                 textureObjects.push(object);
+                // Mark as texture mesh for easy identification later
+                object.userData.isTextureMesh = true;
             }
-        });
-        return textureObjects;
-    }
-
+            // Also check traditional naming as a fallback
+            else if (object.name.includes("Fronttex") || object.name.includes("Backtex")) {
+                textureObjects.push(object);
+                object.userData.isTextureMesh = true;
+            }
+        }
+    });
+    
+    console.log(`Found ${textureObjects.length} texture objects:`, 
+        textureObjects.map(o => o.name));
+        
+    return textureObjects;
+}
     applyStoredTextureToObjects(objects) {
         if (!this.loadedTexture) return;
 
@@ -310,9 +375,31 @@ export class EventHandler {
         });
     }
 
+        
     updateUIForSelection(object) {
         this.updateModelNameDisplay(object.name);
         this.updateMaterialControls(object);
+        
+        // Update roughness and metalness sliders for model part
+        const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
+        const metalSlider = document.getElementById('modelPartMetalnessSlider');
+        const roughnessValue = document.getElementById('modelRoughnessValue');
+        const metalValue = document.getElementById('modelMetalnessValue');
+
+        if (roughnessSlider && metalSlider && roughnessValue && metalValue && object.material) {
+            // Ensure we're reading the correct values from the material
+            const material = object.material;
+            roughnessSlider.value = material.roughness !== undefined ? material.roughness : 0.8;
+            metalSlider.value = material.metalness !== undefined ? material.metalness : 0.1;
+            roughnessValue.textContent = material.roughness !== undefined ? material.roughness.toFixed(2) : '0.80';
+            metalValue.textContent = material.metalness !== undefined ? material.metalness.toFixed(2) : '0.10';
+            
+            // Log the current material values
+            console.log('Current material values:', {
+                roughness: material.roughness,
+                metalness: material.metalness
+            });
+        }
     }
 
     updateModelNameDisplay(name) {

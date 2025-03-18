@@ -11,9 +11,9 @@ export class OptimizedMaterialManager {
         this.loadingPromises = new Map();
         this.materialSettings = {
             normalScale: 1.0,
-            roughness: 0.8,
-            metalness: 0.2,
-            envMapIntensity: 1.0
+            roughness: 1.0,
+            metalness: 0.0,
+            envMapIntensity: 0.2
         };
 
         // Material presets with texture paths
@@ -23,10 +23,12 @@ export class OptimizedMaterialManager {
                 color: new THREE.Color(0xffffff),
                 roughness: 1.0,
                 metalness: 0.0,
-                sheen: 0.3,
-                sheenRoughness: 0.8,
-                side: THREE.DoubleSide,
+                sheen: 0.2,
+                sheenRoughness: 1.0,
+                transmission: 0.15,
+                side: THREE.FrontSide,
                 transparent: true,
+                clearcoat: 0,
                 texturePaths: {
                     baseColor: 'inside_basecolor',
                     normal: 'inside_normal',
@@ -39,10 +41,12 @@ export class OptimizedMaterialManager {
                 color: new THREE.Color(0xffffff),
                 roughness: 0.8,
                 metalness: 0.1,
-                sheen: 0.1,
-                sheenRoughness: 0.8,
+                sheen: 0.3 ,
+                sheenRoughness: 1.0,
                 side: THREE.DoubleSide,
                 transparent: true,
+                transmission: 0.1,
+                clearcoat: 0,
                 texturePaths: {
                     baseColor: 'outside_basecolor',
                     normal: 'outside_normal',

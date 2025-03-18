@@ -19,89 +19,121 @@ export const TextureProvider = ({ children }) => {
   const [activeWorkspace, setActiveWorkspace] = useState('colors');
   const [expandedSections, setExpandedSections] = useState(['colors']);
 
-  // Updated transformation handler that works with both object and individual properties
-  const updateTransformation = (layerId, updateData, value) => {
-    // Handle the legacy format first (type, value)
-    if (typeof updateData === 'string' && value !== undefined) {
-      // Legacy call with (layerId, type, value)
-      setLayers(prevLayers => 
-        prevLayers.map(layer => {
-          if (layer.id === layerId) {
-            return {
-              ...layer,
-              transformations: {
-                ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
-                [updateData]: value
-              }
-            };
-          }
-          return layer;
-        })
-      );
 
-      // Update active layer if it's the same
-      if (activeLayer?.id === layerId) {
-        setActiveLayer(prev => ({
-          ...prev,
-          transformations: {
-            ...(prev.transformations || DEFAULT_TRANSFORMATIONS),
-            [updateData]: value
-          }
-        }));
-      }
+  const updateTexturesForSelectedParts = (layerId) => {
+    // Find the layer that was updated
+    const updatedLayer = layers.find(layer => layer.id === layerId);
+    
+    // Only proceed if we found the layer and it has a texture
+    if (!updatedLayer || !updatedLayer.texture) return;
+    
+    // Get all texture objects from the scene
+    const textureObjects = window.findTextureObjects?.() || [];
+    if (textureObjects.length === 0) return;
+    
+    console.log(`Updating textures for ${textureObjects.length} objects based on part selection for layer ${layerId}`);
+    
+    // Get the compositor instance (this assumes it's available in the global scope)
+    const compositor = window.textureCompositor || window._textureCompositor;
+    if (!compositor) {
+      console.warn('TextureCompositor instance not found in global scope');
       return;
     }
+    
+    // Update materials for all texture objects
+    textureObjects.forEach(async (object) => {
+      await compositor.updateMaterial(object, layers);
+    });
+  };
+  
 
-    // Handle the new unified format
+  // Updated transformation handler that works with both object and individual properties
+  
+// Then update the updateTransformation function to call this when selectedParts change
+const updateTransformation = (layerId, updateData, value) => {
+  // Handle the legacy format first (type, value)
+  if (typeof updateData === 'string' && value !== undefined) {
+    // Legacy call with (layerId, type, value)
     setLayers(prevLayers => 
       prevLayers.map(layer => {
         if (layer.id === layerId) {
           return {
             ...layer,
-            // Update transformations if included
-            ...(updateData.transformations ? {
-              transformations: {
-                ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
-                ...updateData.transformations
-              }
-            } : {}),
-            // Update material properties if included
-            ...(updateData.materialProperties ? {
-              materialProperties: {
-                ...(layer.materialProperties || {}),
-                ...updateData.materialProperties
-              }
-            } : {})
+            transformations: {
+              ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
+              [updateData]: value
+            }
           };
         }
         return layer;
       })
     );
+    return;
+  }
 
-    // Update active layer if it's the same
-    if (activeLayer?.id === layerId) {
-      setActiveLayer(prev => {
-        if (!prev) return prev;
+  // Handle the new unified format
+  setLayers(prevLayers => 
+    prevLayers.map(layer => {
+      if (layer.id === layerId) {
         return {
-          ...prev,
+          ...layer,
           // Update transformations if included
           ...(updateData.transformations ? {
             transformations: {
-              ...(prev.transformations || DEFAULT_TRANSFORMATIONS),
+              ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
               ...updateData.transformations
             }
           } : {}),
           // Update material properties if included
           ...(updateData.materialProperties ? {
             materialProperties: {
-              ...(prev.materialProperties || {}),
+              ...(layer.materialProperties || {}),
               ...updateData.materialProperties
             }
+          } : {}),
+          // Update selected parts if included
+          ...(updateData.selectedParts !== undefined ? {
+            selectedParts: updateData.selectedParts
           } : {})
         };
-      });
-    }
-  };
+      }
+      return layer;
+    })
+  );
+
+  // Update active layer if it's the same
+  if (activeLayer?.id === layerId) {
+    setActiveLayer(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        // Update transformations if included
+        ...(updateData.transformations ? {
+          transformations: {
+            ...(prev.transformations || DEFAULT_TRANSFORMATIONS),
+            ...updateData.transformations
+          }
+        } : {}),
+        // Update material properties if included
+        ...(updateData.materialProperties ? {
+          materialProperties: {
+            ...(prev.materialProperties || {}),
+            ...updateData.materialProperties
+          }
+        } : {}),
+        // Update selected parts if included
+        ...(updateData.selectedParts !== undefined ? {
+          selectedParts: updateData.selectedParts
+        } : {})
+      };
+    });
+  }
+  
+  if (updateData.selectedParts !== undefined) {
+    // Add a slight delay to ensure state is updated
+    setTimeout(() => updateTexturesForSelectedParts(layerId), 50);
+  }
+};
 
   const updateMaterialType = (layerId, materialType) => {
     setLayers(prevLayers =>
@@ -145,74 +177,53 @@ export const TextureProvider = ({ children }) => {
     }
   };
 
- // In TextureContext.jsx - update the addLayer function
-const addLayer = () => {
-  // Find the outside material to get its normal map
-  let outsideNormalMap = null;
-  const findOutsideMaterial = () => {
-      if (typeof window !== 'undefined' && window.scene) {
-          let foundNormalMap = null;
-          window.scene.traverse((object) => {
-              if (object.isMesh && 
-                  object.material && 
-                  object.name.toLowerCase().includes('outside') &&
-                  object.material.normalMap) {
-                  foundNormalMap = object.material.normalMap;
-              }
-          });
-          return foundNormalMap;
-      }
-      return null;
-  };
-  
-  outsideNormalMap = findOutsideMaterial();
+  const addLayer = () => {
+    // Extract available parts from the current model
+    let availableParts = [];
+    
+    if (window.MODEL_PATHS && window.currentModel) {
+      availableParts = window.MODEL_PATHS[window.currentModel]?.materials
+        .map(material => material.replace('.glb', ''))
+        .filter(part => part !== 'Fronttex' && part !== 'Backtex') || [];
+    }
 
-  const newLayer = {
+    const newLayer = {
       id: Date.now(),
       opacity: 1,
       texture: null,
       name: `Layer ${layers.length + 1}`,
-      isActive: layers.length === 0,
       visible: true,
-      materialType: 'base', // Change from 'print' to 'base'
+      materialType: 'base',
+      selectedParts: [], // Default to no specific parts (applies to all)
       modelDirectory: window.currentModelDirectory,
       transformations: { ...DEFAULT_TRANSFORMATIONS },
       materialProperties: {
-          roughness: 0.8,
-          metalness: 0.1,
-          clearcoat: 0.0,
-          clearcoatRoughness: 0.0,
-          sheen: 0.0,
-          sheenRoughness: 0.8,
-          outsideNormalMap // Include the outside normal map
+        roughness: 0.8,
+        metalness: 0.1,
+        clearcoat: 0.0,
+        clearcoatRoughness: 0.0,
+        sheen: 0.0,
+        sheenRoughness: 0.8
       }
-  };
+    };
 
-  setLayers(prev => [...prev, newLayer]);
-  if (layers.length === 0) {
-      setActiveLayer(newLayer);
-  }
-  
-  // Make texture objects visible after adding a layer
-  const texObjects = window.findTextureObjects?.() || [];
-  texObjects.forEach(obj => {
+    setLayers(prev => [...prev, newLayer]);
+    
+    // Make texture objects visible after adding a layer
+    const texObjects = window.findTextureObjects?.() || [];
+    texObjects.forEach(obj => {
       if (obj.material) {
-          obj.material.opacity = 1.0;
-          obj.material.needsUpdate = true;
+        obj.material.opacity = 1.0;
+        obj.material.needsUpdate = true;
       }
-  });
-};
+    });
 
-  
+    return newLayer;
+  };
 
   const removeLayer = (layerId) => {
     setLayers(prev => {
       const newLayers = prev.filter(layer => layer.id !== layerId);
-      if (newLayers.length > 0 && prev.find(l => l.id === layerId)?.isActive) {
-        const newActiveLayer = newLayers[0];
-        newActiveLayer.isActive = true;
-        setActiveLayer(newActiveLayer);
-      }
       return newLayers;
     });
   };
@@ -249,11 +260,6 @@ const addLayer = () => {
   const setLayerActive = (layerId) => {
     const layer = layers.find(l => l.id === layerId);
     setActiveLayer(layer);
-    
-    setLayers(prev => prev.map(layer => ({
-      ...layer,
-      isActive: layer.id === layerId
-    })));
   };
 
   const updateLayerTexture = async (layerId, texture) => {

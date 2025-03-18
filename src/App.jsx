@@ -59,11 +59,32 @@ export default function App() {
           if (window.selectedModelPart && !window.selectedModelPart.name.includes('Fronttex') && 
               !window.selectedModelPart.name.includes('Backtex')) {
             const material = window.selectedModelPart.material;
+            
+            // Store exact values in userData to ensure consistency
+            window.selectedModelPart.userData.exactRoughness = roughness;
+            window.selectedModelPart.userData.exactMetalness = metalness;
+            
+            // Apply values to material
             material.roughness = roughness;
             material.metalness = metalness;
             material.needsUpdate = true;
+            
+            // Update UI state
             setSelectedModelRoughness(roughness);
             setSelectedModelMetalness(metalness);
+            
+            // Update any sliders created in eventHandler
+            const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
+            const metalSlider = document.getElementById('modelPartMetalnessSlider');
+            const roughnessValue = document.getElementById('modelRoughnessValue');
+            const metalValue = document.getElementById('modelMetalnessValue');
+            
+            if (roughnessSlider) roughnessSlider.value = roughness;
+            if (metalSlider) metalSlider.value = metalness;
+            if (roughnessValue) roughnessValue.textContent = roughness.toFixed(2);
+            if (metalValue) metalValue.textContent = metalness.toFixed(2);
+            
+            console.log(`Material properties updated - Roughness: ${roughness}, Metalness: ${metalness}`);
           }
         };
         
@@ -97,7 +118,7 @@ export default function App() {
       await appRef.current.loadModel(modelId);
 
       // Restore material settings if they were customized
-      if (selectedModelRoughness !== 0.8 || selectedModelMetalness !== 0.1) {
+      if (selectedModelRoughness !== 1.0 || selectedModelMetalness !== 0.1) {
         window.updateSelectedModelMaterial?.(selectedModelRoughness, selectedModelMetalness);
       }
     } catch (error) {
@@ -293,6 +314,44 @@ export default function App() {
                             className="w-full accent-blue-500"
                           />
                         </div>
+
+                        <button
+                        onClick={() => {
+                          if (window.selectedModelPart) {
+                            const material = window.selectedModelPart.material;
+                            console.log('Current material properties:', {
+                              name: window.selectedModelPart.name,
+                              roughness: material.roughness,
+                              metalness: material.metalness,
+                              type: material.type,
+                              uuid: material.uuid
+                            });
+                            
+                            // Force update the material
+                            material.metalness = selectedModelMetalness;
+                            material.roughness = selectedModelRoughness;
+                            material.needsUpdate = true;
+                            
+                            console.log('Updated to:', {
+                              roughness: material.roughness,
+                              metalness: material.metalness
+                            });
+                            
+                            // Verify if the change persists
+                            setTimeout(() => {
+                              console.log('After timeout:', {
+                                roughness: material.roughness,
+                                metalness: material.metalness
+                              });
+                            }, 500);
+                          } else {
+                            console.log('No part selected');
+                          }
+                        }}
+                        className="mt-2 w-full p-2 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded"
+                      >
+                        Debug Material Properties
+                      </button>
                       </div>
                     )}
                   </div>

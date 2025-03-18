@@ -160,15 +160,22 @@ export class MaterialManager {
             roughness: preset.roughness,
             metalness: preset.metalness,
             sheen: preset.sheen || 0,
-            sheenRoughness: preset.sheenRoughness || 0.8,
+            sheenRoughness: preset.sheenRoughness || 1.0,
             clearcoat: preset.clearcoat || 0,
             transmission: preset.transmission || 0,
             side: THREE.DoubleSide,
             transparent: true
         };
-
+    
         const material = new THREE.MeshPhysicalMaterial(materialParams);
-
+    
+        // Apply environment map intensity from global config if available
+        if (window.GLOBAL_ENV_INTENSITY !== undefined) {
+            material.envMapIntensity = window.GLOBAL_ENV_INTENSITY;
+        } else if (LIGHTING_CONFIG && LIGHTING_CONFIG.environmentMap) {
+            material.envMapIntensity = LIGHTING_CONFIG.environmentMap.envMapIntensity || 0.5;
+        }
+    
         if (preset.texturePaths) {
             try {
                 if (preset.texturePaths.normalMap) {
@@ -218,6 +225,11 @@ export class MaterialManager {
         }
 
         material.needsUpdate = true;
+          // Store the exact property values in the material's userData for consistency
+            material.userData = material.userData || {};
+            material.userData.exactRoughness = material.roughness;
+            material.userData.exactMetalness = material.metalness;
+            
         return material;
     }
 

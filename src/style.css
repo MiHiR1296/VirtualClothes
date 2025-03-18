@@ -67,6 +67,41 @@ body, html {
     text-align: center;
 }
 
+.texture-edit-mode {
+    outline: 2px solid #3b82f6; /* Blue outline */
+    outline-offset: -2px;
+    position: relative;
+}
+
+.texture-edit-mode::before {
+    content: "Texture Edit Mode";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #3b82f6;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.texture-edit-mode::after {
+    content: "Press ESC to exit";
+    position: absolute;
+    top: 34px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    pointer-events: none;
+    z-index: 100;
+}
+
+
 #loadingBarContainer {
     width: 300px;
     height: 3px;
