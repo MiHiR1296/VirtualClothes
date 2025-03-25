@@ -51,6 +51,8 @@ export default function LayerItem({
   };
 
   // Part selection handler with error checking
+  
+  // Direct part selection handler for LayerItem.jsx
   const handlePartSelectionChange = (e) => {
     try {
       const options = e.target.options;
@@ -67,34 +69,65 @@ export default function LayerItem({
       // Set local state first for immediate UI feedback
       setSelectedParts(newSelectedParts);
       
-      // Then update context
+      // Log the new selection for debugging
+      console.log(`Layer ${layer.id} (${layer.name}): Selected parts changed to:`, newSelectedParts);
+      
+      // First step: Update the layer data in context
       updateTransformation(layer.id, {
         selectedParts: newSelectedParts
       });
       
-      // Log the selected parts for debugging
-      console.log(`Updated selected parts for layer ${layer.id}:`, newSelectedParts);
-      
-      // Force a refresh of texture materials
-      setTimeout(() => {
-        // Find and update all texture meshes
-        const textureMeshes = window.findTextureObjects?.() || [];
-        if (textureMeshes.length > 0) {
-          console.log(`Refreshing ${textureMeshes.length} texture meshes after part selection change`);
-          
-          // Get the compositor instance
-          const compositor = window._textureCompositor;
-          if (compositor) {
-            // Get all layers from context
-            const allLayers = window.getAllTextureLayersForUpdate?.() || [];
-            
-            // Update each texture mesh
-            textureMeshes.forEach(async (object) => {
-              await compositor.updateMaterial(object, allLayers.length > 0 ? allLayers : [layer]);
-            });
-          }
+      // Second step: Force immediate update of all texture meshes
+      const updateTextureMeshes = () => {
+        // Get all texture objects from the scene
+        const textureObjects = window.findTextureObjects?.() || [];
+        if (textureObjects.length === 0) {
+          console.warn("No texture objects found to update");
+          return;
         }
-      }, 50);
+        
+        console.log(`Updating ${textureObjects.length} texture objects with new part selection`);
+        
+        // Get the compositor
+        const compositor = window._textureCompositor;
+        if (!compositor) {
+          console.warn('TextureCompositor not available');
+          return;
+        }
+        
+        // Reset compositor to clear any cached state
+        compositor.reset();
+        
+        // Get all layers, ensuring we have the latest data
+        const allLayers = window.getAllTextureLayersForUpdate?.() || [];
+        
+        // Explicitly reset materials first
+        textureObjects.forEach(obj => {
+          if (obj.material) {
+            // Ensure we have proper material properties
+            obj.material.transparent = true;
+            obj.material.opacity = 1.0;
+            obj.material.alphaTest = 0.01;
+            obj.material.needsUpdate = true;
+          }
+        });
+        
+        // Now update all texture objects with fresh data
+        textureObjects.forEach(object => {
+          try {
+            // Always use the latest context data
+            const latestLayers = window.getAllTextureLayersForUpdate?.() || allLayers;
+            
+            // Completely fresh update
+            compositor.updateMaterial(object, latestLayers);
+          } catch (error) {
+            console.error(`Error updating material for ${object.name}:`, error);
+          }
+        });
+      };
+      
+      // Execute the update with a very slight delay to ensure context is updated
+      setTimeout(updateTextureMeshes, 10);
       
     } catch (error) {
       console.error('Error updating part selection:', error);

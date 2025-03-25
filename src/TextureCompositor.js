@@ -5,8 +5,8 @@ import { loadNormalMap } from './textureUtils';
 export class TextureCompositor {
     constructor() {
         this.loadedNormalMaps = new Map();
-        this.width = 1024;
-        this.height = 1024;
+        this.width = 2048; // Increased for even higher resolution
+        this.height = 2048; // Increased for even higher resolution
         this.scene = null; // Will be set on first use
         this.originalMaterials = new Map(); // Store original materials by object name
         this.appliedLayersByObject = new Map(); // Track which layers are applied to which objects
@@ -83,9 +83,6 @@ export class TextureCompositor {
                 }
             }
     
-            // Debug part name extraction
-            console.log(`Using part name "${partName}" for object "${object.name}"`);
-    
             // Find layers that apply to this specific mesh based on selectedParts
             const applicableLayers = layers
                 .filter(layer => {
@@ -102,20 +99,15 @@ export class TextureCompositor {
                     
                     // Check if any selected part matches our part name
                     return layer.selectedParts.some(selectedPart => {
-                        // Direct name comparison (case insensitive)
+                        // Exact match (case insensitive)
                         if (selectedPart.toLowerCase() === partName.toLowerCase()) {
                             return true;
                         }
                         
-                        // Check if part name contains the selected part or vice versa
-                        if (partName.toLowerCase().includes(selectedPart.toLowerCase()) ||
-                            selectedPart.toLowerCase().includes(partName.toLowerCase())) {
-                            return true;
-                        }
-                        
-                        // Check for match with the original object name
-                        if (object.name.toLowerCase().includes(selectedPart.toLowerCase()) ||
-                            selectedPart.toLowerCase().includes(object.name.toLowerCase())) {
+                        // Check for exact match in the object name
+                        if (object.name.toLowerCase().includes(`_${selectedPart.toLowerCase()}_`) || 
+                            object.name.toLowerCase().endsWith(`_${selectedPart.toLowerCase()}`) ||
+                            object.name.toLowerCase().startsWith(`${selectedPart.toLowerCase()}_`)) {
                             return true;
                         }
                         
@@ -129,34 +121,34 @@ export class TextureCompositor {
     
             // If no applicable layers, restore the original material
             if (applicableLayers.length === 0) {
+                // Get the original material if available
                 const originalMaterial = this.originalMaterials.get(object.name);
+                
                 if (originalMaterial) {
                     // Clean up current material if it exists
                     if (object.material) {
                         object.material.dispose();
                     }
                     
-                    // Clone the original to avoid modifying it
-                    object.material = originalMaterial.clone();
-                    object.material.needsUpdate = true;
-                    console.log(`Restored original material for ${object.name}`);
+                    // Clone the original material but make it transparent
+                    const invisibleMaterial = originalMaterial.clone();
+                    invisibleMaterial.transparent = true;
+                    invisibleMaterial.opacity = 0;
+                    invisibleMaterial.depthWrite = false;  // Don't write to depth buffer
+                    invisibleMaterial.needsUpdate = true;
+                    
+                    object.material = invisibleMaterial;
                 } else {
-                    // Make it semi-transparent if no original material
+                    // Create a completely transparent material if no original
                     if (object.material) {
-                        object.material.opacity = 0.3;
                         object.material.transparent = true;
+                        object.material.opacity = 0;
+                        object.material.depthWrite = false;
                         object.material.needsUpdate = true;
                     }
                 }
                 return;
             }
-    
-            // Create main canvas for texture composition
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = this.width;
-            canvas.height = this.height;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
     
             // Get the environment map and intensity from the scene if available
             const envMap = this.scene ? this.scene.environment : null;
@@ -164,6 +156,23 @@ export class TextureCompositor {
             
             // Find the outside material to match properties
             const outsideMaterial = this.findOutsideMaterial();
+            
+            // Create texture directly with Three.js instead of using canvas for repeating patterns
+            // This avoids seams in the 3D view when repeating patterns are used
+            const topLayer = applicableLayers[0]; // First layer (topmost in rendering order)
+            
+            if (topLayer && topLayer.texture && topLayer.transformations?.repeat) {
+                // For repeat mode, create a specialized seamless repeating texture
+                this.createRepeatingTextureMaterial(object, topLayer, applicableLayers, outsideMaterial, envMap);
+                return;
+            }
+            
+            // For non-repeating textures, continue with canvas compositing approach
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { alpha: true });
+            canvas.width = this.width;
+            canvas.height = this.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
     
             // Process layers in reverse order (bottom to top)
             for (let i = applicableLayers.length - 1; i >= 0; i--) {
@@ -172,7 +181,7 @@ export class TextureCompositor {
                 if (!layer.visible) continue;
     
                 const layerCanvas = document.createElement('canvas');
-                const layerCtx = layerCanvas.getContext('2d');
+                const layerCtx = layerCanvas.getContext('2d', { alpha: true });
                 layerCanvas.width = canvas.width;
                 layerCanvas.height = canvas.height;
     
@@ -189,68 +198,91 @@ export class TextureCompositor {
                         ...layer.transformations
                     };
     
-                    if (transformations.repeat) {
-                        const patternSize = canvas.width / (4 / transformations.scale);
-                        const tempCanvas = document.createElement('canvas');
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCanvas.width = patternSize;
-                        tempCanvas.height = patternSize;
-                        
-                        tempCtx.drawImage(layer.texture.image, 0, 0, patternSize, patternSize);
-                        
-                        const pattern = layerCtx.createPattern(tempCanvas, 'repeat');
-                        if (pattern) {
-                            const matrix = new DOMMatrix()
-                                .translateSelf(
-                                    transformations.offset.x * canvas.width,
-                                    transformations.offset.y * canvas.height
-                                )
-                                .rotateSelf(transformations.rotation)
-                                .scaleSelf(transformations.flipX, transformations.flipY);
-                            
-                            pattern.setTransform(matrix);
-                            layerCtx.fillStyle = pattern;
-                            layerCtx.fillRect(0, 0, canvas.width, canvas.height);
-                        }
-                    } else {
-                        layerCtx.save();
-                        
-                        layerCtx.translate(canvas.width / 2, canvas.height / 2);
-                        
-                        const imgWidth = canvas.width * 0.8;
-                        const imgHeight = canvas.height * 0.8;
-                        
-                        const offsetX = transformations.offset.x * canvas.width;
-                        const offsetY = transformations.offset.y * canvas.height;
-                        layerCtx.translate(offsetX, offsetY);
-                        
-                        layerCtx.rotate(transformations.rotation * Math.PI / 180);
-                        layerCtx.scale(
-                            transformations.flipX * transformations.scale,
-                            transformations.flipY * transformations.scale
-                        );
-                        
-                        layerCtx.drawImage(
-                            layer.texture.image,
-                            -imgWidth / 2,
-                            -imgHeight / 2,
-                            imgWidth,
-                            imgHeight
-                        );
-                        
-                        layerCtx.restore();
-                    }
+                    // For standard non-repeating rendering
+                    layerCtx.save();
+                    
+                    layerCtx.translate(canvas.width / 2, canvas.height / 2);
+                    
+                    // Apply offset
+                    const offsetX = transformations.offset.x * canvas.width;
+                    const offsetY = transformations.offset.y * canvas.height;
+                    layerCtx.translate(offsetX, offsetY);
+                    
+                    // Apply rotation
+                    layerCtx.rotate(transformations.rotation * Math.PI / 180);
+                    
+                    // Apply scale and flip
+                    layerCtx.scale(
+                        transformations.flipX * transformations.scale,
+                        transformations.flipY * transformations.scale
+                    );
+                    
+                    // Calculate image dimensions while preserving aspect ratio
+                    const imgWidth = canvas.width * 0.8;
+                    const imgHeight = canvas.height * 0.8;
+                    
+                    // Use better image rendering quality
+                    layerCtx.imageSmoothingEnabled = true;
+                    layerCtx.imageSmoothingQuality = 'high';
+                    
+                    // Draw the image
+                    layerCtx.drawImage(
+                        layer.texture.image,
+                        -imgWidth / 2,
+                        -imgHeight / 2,
+                        imgWidth,
+                        imgHeight
+                    );
+                    
+                    layerCtx.restore();
     
-                    // Apply layer opacity
+                    // Apply layer opacity and draw to the main canvas
                     ctx.globalAlpha = layer.opacity || 1;
                     ctx.drawImage(layerCanvas, 0, 0);
                 }
             }
+            
+            // Color correction to fix color inconsistency between UV editor and 3D model
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Only process non-transparent pixels
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] > 0) {  // If pixel has any opacity
+                    // Color correction factors
+                    const colorCorrection = 1.08;  // Slightly higher boost
+                    const contrastBoost = 1.03;    // Subtle contrast enhancement
+                    
+                    // Apply correction to RGB channels
+                    for (let j = 0; j < 3; j++) {
+                        // Apply contrast (center around 128)
+                        let value = data[i + j];
+                        value = ((value / 255 - 0.5) * contrastBoost + 0.5) * 255;
+                        
+                        // Apply brightness/saturation
+                        value = value * colorCorrection;
+                        
+                        // Clamp to valid range
+                        data[i + j] = Math.max(0, Math.min(255, Math.round(value)));
+                    }
+                }
+            }
+            
+            // Put the processed imageData back to the canvas
+            ctx.putImageData(imageData, 0, 0);
     
+            // Create a high-quality texture from the canvas
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.flipY = false;
+            
+            // Use higher quality settings for better appearance
+            texture.generateMipmaps = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.colorSpace = THREE.SRGBColorSpace;
+            
             texture.needsUpdate = true;
     
             // Start with the original material properties if available
@@ -323,6 +355,165 @@ export class TextureCompositor {
         }
     }
 
+    // Create a specialized material for repeating textures using THREE.js built-in texture repeating
+    // This avoids seams that appear when using canvas-based repeating
+    createRepeatingTextureMaterial(object, layer, allLayers, outsideMaterial, envMap) {
+        try {
+            if (!layer || !layer.texture) {
+                console.warn('Cannot create repeating texture without a valid texture');
+                return;
+            }
+            
+            const transformations = {
+                offset: { x: 0, y: 0 },
+                scale: 1,
+                rotation: 0,
+                repeat: true,
+                flipX: 1,
+                flipY: 1,
+                ...layer.transformations
+            };
+            
+            // Clone the texture to avoid modifying the original
+            const texture = layer.texture.clone();
+            
+            // Configure texture wrapping for seamless repeating
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            
+            // Apply high-quality filtering to prevent pixelation
+            texture.generateMipmaps = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            
+            // Calculate repeat based on scale - same formula as in UVEditor
+            // In THREE.js, smaller scale = more repetitions (1/scale)
+            const repeatFactor = 1.0 / Math.max(0.1, transformations.scale);
+            texture.repeat.set(repeatFactor, repeatFactor);
+            
+            // Apply offset directly from transformations
+            // Note: Offset in THREE.js goes from 0-1 (UV space)
+            texture.offset.x = -transformations.offset.x;
+            texture.offset.y = -transformations.offset.y;
+            
+            // Apply rotation
+            if (transformations.rotation !== 0) {
+                // Convert degrees to radians
+                const angle = transformations.rotation * Math.PI / 180;
+                texture.rotation = angle;
+                
+                // Center the rotation point
+                texture.center.set(0.5, 0.5);
+            }
+            
+            // Apply flipping through texture matrix
+            if (transformations.flipX < 0 || transformations.flipY < 0) {
+                // We need to modify the texture coordinate mapping
+                texture.matrixAutoUpdate = false;
+                
+                // Create a matrix to handle flipping
+                const matrix = new THREE.Matrix3();
+                
+                // Start with identity matrix
+                matrix.set(
+                    1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1
+                );
+                
+                // Apply flipping
+                if (transformations.flipX < 0) {
+                    matrix.elements[0] = -1; // Negate X scale
+                    matrix.elements[6] = 1;  // Offset to compensate
+                }
+                
+                if (transformations.flipY < 0) {
+                    matrix.elements[4] = -1; // Negate Y scale
+                    matrix.elements[7] = 1;  // Offset to compensate
+                }
+                
+                // Set matrix to texture
+                texture.matrix.setFromMatrix3(matrix);
+            }
+            
+            // Ensure texture updates are applied
+            texture.needsUpdate = true;
+            
+            // Start with the original material properties
+            const originalMaterial = this.originalMaterials.get(object.name);
+            const baseProperties = originalMaterial 
+                ? {
+                    color: originalMaterial.color,
+                    roughness: originalMaterial.roughness,
+                    metalness: originalMaterial.metalness,
+                    envMapIntensity: originalMaterial.envMapIntensity,
+                    normalMap: originalMaterial.normalMap,
+                    normalScale: originalMaterial.normalScale?.clone() || new THREE.Vector2(1, 1)
+                }
+                : {
+                    color: new THREE.Color(0xffffff),
+                    roughness: 0.8,
+                    metalness: 0.1,
+                    envMapIntensity: 1.0,
+                    normalMap: null,
+                    normalScale: new THREE.Vector2(1, 1)
+                };
+            
+            // Create new material with the repeating texture
+            const newMaterial = new THREE.MeshPhysicalMaterial({
+                map: texture,
+                ...baseProperties,
+                transparent: true,
+                side: THREE.FrontSide,
+                depthWrite: true,
+                depthTest: true,
+                alphaTest: 0.1
+            });
+            
+            // Apply opacity from the layer
+            newMaterial.opacity = layer.opacity || 1;
+            
+            // Copy environment map settings
+            if (envMap) {
+                newMaterial.envMap = envMap;
+                newMaterial.envMapIntensity = baseProperties.envMapIntensity;
+            }
+            
+            // Apply material properties from layer settings
+            const materialProps = materialTypes[layer.materialType || 'base'].properties;
+            
+            if (layer.materialProperties) {
+                newMaterial.roughness = layer.materialProperties.roughness ?? materialProps.roughness;
+                newMaterial.metalness = layer.materialProperties.metalness ?? materialProps.metalness;
+                newMaterial.clearcoat = layer.materialProperties.clearcoat ?? (materialProps.clearcoat || 0);
+                newMaterial.clearcoatRoughness = layer.materialProperties.clearcoatRoughness ?? (materialProps.clearcoatRoughness || 0);
+                newMaterial.sheen = layer.materialProperties.sheen ?? (materialProps.sheen || 0);
+                newMaterial.sheenRoughness = layer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
+            }
+            
+            // Clean up old material if different
+            if (object.material && object.material !== newMaterial) {
+                object.material.dispose();
+            }
+            
+            // Apply new material
+            object.material = newMaterial;
+            object.material.needsUpdate = true;
+            object.renderOrder = 1;
+            
+            console.log(`Applied repeating texture to ${object.name}:`, {
+                scale: transformations.scale,
+                repeatFactor,
+                offset: transformations.offset,
+                rotation: transformations.rotation,
+                flipX: transformations.flipX,
+                flipY: transformations.flipY
+            });
+            
+        } catch (error) {
+            console.error('Error creating repeating texture material:', error);
+        }
+    }
     findOutsideMaterial() {
         let outsideMaterial = null;
         if (this.scene) {

@@ -225,10 +225,10 @@ export class MaterialManager {
         }
 
         material.needsUpdate = true;
-          // Store the exact property values in the material's userData for consistency
+        if (material.color) {
             material.userData = material.userData || {};
-            material.userData.exactRoughness = material.roughness;
-            material.userData.exactMetalness = material.metalness;
+            material.userData.exactColor = '#' + material.color.getHexString().toUpperCase();
+        }
             
         return material;
     }
@@ -279,8 +279,9 @@ export class MaterialManager {
         object.material = newMaterial;
         
         // Store exact color in userData for consistent color picking
+        // Use upper case to ensure consistency across the application
         if (object.material.color) {
-            object.userData.exactColor = '#' + object.material.color.getHexString();
+            object.userData.exactColor = '#' + object.material.color.getHexString().toUpperCase();
         }
         
         object.material.needsUpdate = true;

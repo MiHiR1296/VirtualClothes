@@ -15,6 +15,9 @@ export class OptimizedMaterialManager {
             metalness: 0.0,
             envMapIntensity: 0.2
         };
+        
+        // Debug flag
+        this.debug = true;
 
         // Material presets with texture paths
         this.materialPresets = {
@@ -39,9 +42,9 @@ export class OptimizedMaterialManager {
             outside: {
                 type: 'MeshPhysicalMaterial',
                 color: new THREE.Color(0xffffff),
-                roughness: 0.8,
+                roughness: 1.0,
                 metalness: 0.1,
-                sheen: 0.3 ,
+                sheen: 0.3,
                 sheenRoughness: 1.0,
                 side: THREE.DoubleSide,
                 transparent: true,
@@ -73,7 +76,7 @@ export class OptimizedMaterialManager {
             button: {
                 type: 'MeshStandardMaterial',
                 color: new THREE.Color(0x2a2a2a),
-                roughness: 0.3,
+                roughness: 0.6,
                 metalness: 0.8,
                 side: THREE.DoubleSide,
                 transparent: true,
@@ -95,72 +98,100 @@ export class OptimizedMaterialManager {
                 }
             }
         };
-    }
-
-
-    
-async createMaterialsForModel(modelConfig) {
-    const cacheKey = modelConfig.directory;
-    
-    // Check if already loading
-    if (this.loadingPromises.has(cacheKey)) {
-        return this.loadingPromises.get(cacheKey);
-    }
-
-    // Check cache first
-    if (this.materialCache.has(cacheKey)) {
-        return this.materialCache.get(cacheKey);
-    }
-
-    try {
-        console.log('\n📦 Starting Material Creation for:', modelConfig.directory);
-        const loadingPromise = this._loadMaterialsForModel(modelConfig);
-        this.loadingPromises.set(cacheKey, loadingPromise);
         
-        const materialSets = await loadingPromise;
-        this.materialCache.set(cacheKey, materialSets);
+        // Track materials created per mesh file
+        this.meshMaterials = new Map();
         
+        // Track mesh names to material assignments for debugging
+        this.meshAssignments = new Map();
+    }
+
+    async createMaterialsForModel(modelConfig) {
+        const cacheKey = modelConfig.directory;
+        
+        // Check if already loading
+        if (this.loadingPromises.has(cacheKey)) {
+            return this.loadingPromises.get(cacheKey);
+        }
+
+        // Check cache first
+        if (this.materialCache.has(cacheKey)) {
+            return this.materialCache.get(cacheKey);
+        }
+
+        try {
+            console.log('\n📦 Starting Material Creation for:', modelConfig.directory);
+            const loadingPromise = this._loadMaterialsForModel(modelConfig);
+            this.loadingPromises.set(cacheKey, loadingPromise);
+            
+            const materialSets = await loadingPromise;
+            this.materialCache.set(cacheKey, materialSets);
+            
+            return materialSets;
+        } finally {
+            this.loadingPromises.delete(cacheKey);
+        }
+    }
+
+    async _loadMaterialsForModel(modelConfig) {
+        const materialSets = new Map();
+        const baseTexturePath = `${modelConfig.directory}/Textures`;
+        
+        // Create a map to store textures by type
+        const texturesByType = new Map();
+        
+        // Reset mesh materials tracking for this model
+        this.meshMaterials.clear();
+        this.meshAssignments.clear();
+        
+        for (const type of modelConfig.materialTypes) {
+            console.log(`Loading textures for type: ${type}`);
+            
+            const materialConfig = this.getMaterialConfig(type);
+            if (!materialConfig) continue;
+
+            // Load textures based on material type
+            const textures = await this.loadTexturesForType(
+                baseTexturePath, 
+                type, 
+                materialConfig
+            );
+            
+            // Store the textures for this type
+            texturesByType.set(type, textures);
+            
+            // Create base material with loaded textures
+            const baseMaterial = await this.createMaterialWithTextures(type, textures, materialConfig);
+            
+            // Color-code different material types for debugging
+            if (this.debug) {
+                switch(type) {
+                    case 'inside':
+                        baseMaterial.color.set(0xfe9762); // Light blue
+                        break;
+                    case 'outside':
+                        baseMaterial.color.set(0xfe9762); // Light green
+                        break;
+                    case 'button':
+                        baseMaterial.color.set(0xce2029); // Light pink
+                        break;
+                    case 'thread':
+                        baseMaterial.color.set(0xeecc88); // Light orange
+                        break;
+                    case 'metal':
+                        baseMaterial.color.set(0xdddddd); // Light gray
+                        break;
+                }
+            }
+            
+            materialSets.set(type, {
+                material: baseMaterial,
+                textures: textures
+            });
+        }
+
         return materialSets;
-    } finally {
-        this.loadingPromises.delete(cacheKey);
     }
-}
-
-async _loadMaterialsForModel(modelConfig) {
-    const materialSets = new Map();
-    const baseTexturePath = `${modelConfig.directory}/Textures`;
-    
-    // Create a map to store textures by type
-    const texturesByType = new Map();
-    
-    for (const type of modelConfig.materialTypes) {
-        console.log(`Loading textures for type: ${type}`);
-        
-        const materialConfig = this.getMaterialConfig(type);
-        if (!materialConfig) continue;
-
-        // Load textures based on material type
-        const textures = await this.loadTexturesForType(
-            baseTexturePath, 
-            type, 
-            materialConfig
-        );
-        
-        // Store the textures for this type
-        texturesByType.set(type, textures);
-        
-        // Create material with loaded textures
-        const material = await this.createMaterialWithTextures(type, textures, materialConfig);
-        
-        materialSets.set(type, {
-            material: material,
-            textures: textures
-        });
-    }
-
-    return materialSets;
-}
-
 
     getMaterialConfig(type) {
         const preset = this.materialPresets[type];
@@ -170,6 +201,7 @@ async _loadMaterialsForModel(modelConfig) {
         }
         return preset;
     }
+    
     async loadTexturesForType(baseTexturePath, type, materialConfig) {
         const textures = {};
         const isSharedMaterial = materialConfig.isSharedMaterial;
@@ -241,42 +273,6 @@ async _loadMaterialsForModel(modelConfig) {
         return textureCache.loadTexture(fullPath, textureType);
     }
 
-    async loadTexture(path) {
-        return new Promise((resolve, reject) => {
-            // Add error handler to check for HTML response
-            const errorHandler = (error) => {
-                if (error?.message?.includes('<!DOCTYPE')) {
-                    console.warn(`Invalid response format for texture: ${path}`);
-                    resolve(null);
-                } else {
-                    reject(error);
-                }
-            };
-    
-            this.textureLoader.load(
-                path,
-                (texture) => {
-                    texture.flipY = false;
-                    texture.generateMipmaps = true;
-                    texture.wrapS = THREE.RepeatWrapping;
-                    texture.wrapT = THREE.RepeatWrapping;
-                    
-                    // Set proper color space based on texture type
-                    texture.colorSpace = path.includes('normal') || 
-                                       path.includes('roughness') || 
-                                       path.includes('metallic') ? 
-                        THREE.NoColorSpace : 
-                        THREE.SRGBColorSpace;
-                    
-                    texture.needsUpdate = true;
-                    resolve(texture);
-                },
-                undefined,
-                errorHandler
-            );
-        });
-    }
-
     async createMaterialWithTextures(type, textures, materialConfig) {
         const {
             texturePaths,
@@ -312,63 +308,260 @@ async _loadMaterialsForModel(modelConfig) {
         return material;
     }
 
+    /**
+     * Create a duplicate of a material
+     * @param {THREE.Material} sourceMaterial - The source material to clone
+     * @param {string} suffix - A suffix to add to the name (optional)
+     * @returns {THREE.Material} A new material instance
+     */
+    createMaterialDuplicate(sourceMaterial, suffix = '') {
+        // Create a new material of the same type
+        const materialType = sourceMaterial.type;
+        const materialClass = THREE[materialType];
+        
+        if (!materialClass) {
+            console.error(`Unknown material type: ${materialType}`);
+            return sourceMaterial.clone(); // Fallback to simple clone
+        }
+        
+        // Create a new material instance
+        const newMaterial = new materialClass();
+        
+        // Copy all properties from the source material
+        Object.keys(sourceMaterial).forEach(key => {
+            if (key !== 'id' && key !== 'uuid' && key !== 'name') {
+                try {
+                    // Handle texture objects (need to be cloned)
+                    if (sourceMaterial[key] && 
+                        sourceMaterial[key].isTexture) {
+                        newMaterial[key] = sourceMaterial[key].clone();
+                    } else if (sourceMaterial[key] && 
+                               typeof sourceMaterial[key] === 'object' && 
+                               sourceMaterial[key].clone) {
+                        // Handle other cloneable objects (Vector2, Color, etc.)
+                        newMaterial[key] = sourceMaterial[key].clone();
+                    } else {
+                        // Handle primitive values
+                        newMaterial[key] = sourceMaterial[key];
+                    }
+                } catch (e) {
+                    console.warn(`Could not copy property ${key}:`, e);
+                }
+            }
+        });
+        
+        // Set a new name if provided
+        if (suffix && sourceMaterial.name) {
+            newMaterial.name = `${sourceMaterial.name}_${suffix}`;
+        }
+        
+        newMaterial.needsUpdate = true;
+        return newMaterial;
+    }
+
+    /**
+     * Assign material to mesh with per-GLB-file differentiation
+     * This creates unique materials for each GLB file to allow independent modification
+     */
     assignMaterialToMesh(mesh, materialSets, modelConfig) {
         const meshName = mesh.name.toLowerCase();
+        
+        // Add debug log for mesh name
+        if (this.debug) {
+            console.log(`Attempting to assign material to mesh: ${mesh.name}`);
+        }
+        
+        // Find material type based on mesh name
         let materialType = this.determineMaterialType(meshName, modelConfig.materialAssignments);
-    
+        
         if (!materialType || !materialSets.has(materialType)) {
-            console.warn(`No material found for mesh: ${meshName}`);
+            if (this.debug) {
+                console.warn(`No material type found for mesh: ${mesh.name}, materialType=${materialType}`);
+            }
             return false;
+        }
+        
+        if (this.debug) {
+            console.log(`Determined material type for mesh ${mesh.name}: ${materialType}`);
         }
     
         const materialSet = materialSets.get(materialType);
-        mesh.material = materialSet.material;
+        
+        // Determine which GLB file this mesh came from
+        const meshFileName = this.determineMeshFileName(mesh);
+        
+        // Create a key for this material type + GLB file combination
+        const materialKey = `${materialType}_${meshFileName}`;
+        
+        if (this.debug) {
+            console.log(`Material key for ${mesh.name}: ${materialKey}`);
+            
+            // Store mesh assignment for debugging
+            this.meshAssignments.set(mesh.name, {
+                meshName: mesh.name,
+                materialType: materialType,
+                meshFileName: meshFileName,
+                materialKey: materialKey
+            });
+        }
+        
+        // Check if we already created a material for this GLB file
+        if (!this.meshMaterials.has(materialKey)) {
+            // Create a duplicate of the base material for this specific GLB file
+            const duplicateMaterial = this.createMaterialDuplicate(
+                materialSet.material, 
+                meshFileName
+            );
+            
+            // Store this duplicate for future meshes from the same GLB file
+            this.meshMaterials.set(materialKey, duplicateMaterial);
+            
+            console.log(`🎨 Created duplicate material for ${materialKey}`);
+        }
+        
+        // Assign the duplicate material to the mesh
+        mesh.material = this.meshMaterials.get(materialKey);
         mesh.material.needsUpdate = true;
-    
-        // Add detailed logging
-        console.log(`🎨 Material Assignment:`, {
-            meshName: mesh.name,
-            materialType: materialType,
-            modelName: modelConfig.name,
-            materialProperties: {
-                color: mesh.material.color?.getHexString(),
-                roughness: mesh.material.roughness,
-                metalness: mesh.material.metalness
-            }
-        });
     
         return true;
     }
 
+    /**
+     * Extract the name of the GLB file that this mesh came from
+     * This is stored in the parent object's userData when loaded 
+     */
+    determineMeshFileName(mesh) {
+        // Try to get filename from mesh's userData
+        if (mesh.userData && mesh.userData.fileName) {
+            const fileName = this.cleanFileName(mesh.userData.fileName);
+            if (this.debug) {
+                console.log(`Got filename from mesh.userData: ${mesh.userData.fileName} -> ${fileName}`);
+            }
+            return fileName;
+        }
+        
+        // Try to get filename from parent's userData
+        let parent = mesh.parent;
+        while (parent) {
+            if (parent.userData && parent.userData.fileName) {
+                const fileName = this.cleanFileName(parent.userData.fileName);
+                if (this.debug) {
+                    console.log(`Got filename from parent.userData: ${parent.userData.fileName} -> ${fileName}`);
+                }
+                return fileName;
+            }
+            parent = parent.parent;
+        }
+        
+        // If we can't determine the file, use the mesh name as a fallback
+        // Remove any numbers or special characters to get a clean part name
+        const partName = mesh.name.replace(/[0-9_\.]/g, '').replace(/\s+/g, '-').toLowerCase();
+        if (this.debug) {
+            console.log(`Falling back to partName from mesh.name: ${mesh.name} -> ${partName}`);
+        }
+        return partName || 'unknown';
+    }
+    
+    /**
+     * Clean up a filename to use as a material identifier
+     * This is the critical function that was causing issues
+     */
+    cleanFileName(fileName) {
+        // Enhanced fileName cleaning with better extension handling
+        if (!fileName) return 'unknown';
+        
+        // First, extract just the base filename without path
+        let baseName = fileName;
+        
+        // Remove path if present
+        if (baseName.includes('/')) {
+            baseName = baseName.split('/').pop();
+        } else if (baseName.includes('\\')) {
+            baseName = baseName.split('\\').pop();
+        }
+        
+        // Remove the .glb extension but preserve other periods
+        // (e.g., "Sleeve.L.glb" -> "Sleeve.L")
+        baseName = baseName.replace(/\.glb$/i, '');
+        
+        // Now clean up the result to make a valid identifier
+        // Convert periods to underscores for consistency
+        baseName = baseName.replace(/\./g, '_');
+        
+        // Replace other invalid chars with underscores
+        baseName = baseName.replace(/[^a-zA-Z0-9_]/g, '_');
+        
+        return baseName.toLowerCase(); // Return lowercase for case-insensitive comparison
+    }
+
     determineMaterialType(meshName, materialAssignments) {
+        // Convert meshName to lowercase for case-insensitive comparison
+        meshName = meshName.toLowerCase();
+        
+        if (this.debug) {
+            console.log(`Finding material type for mesh: ${meshName}`);
+        }
+        
         for (const [type, patterns] of Object.entries(materialAssignments)) {
-            if (patterns.some(pattern => meshName.includes(pattern))) {
+            if (this.debug) {
+                console.log(`Checking type: ${type} with patterns:`, patterns);
+            }
+            
+            if (patterns.some(pattern => {
+                // Convert pattern to lowercase for case-insensitive comparison
+                const patternLower = pattern.toLowerCase();
+                const isMatch = meshName.includes(patternLower);
+                
+                if (this.debug) {
+                    console.log(`  Pattern: ${patternLower}, isMatch: ${isMatch}`);
+                }
+                
+                return isMatch;
+            })) {
                 return type;
             }
         }
         return null;
     }
-
-   
-dispose() {
-    // Dispose existing materials and textures
-    this.textures.forEach(texture => texture.dispose());
-    this.textures.clear();
-    this.materials.forEach(material => material.dispose());
-    this.materials.clear();
     
-    // Clear caches
-    this.materialCache.forEach(materialSet => {
-        materialSet.forEach(({ material, textures }) => {
-            material.dispose();
-            Object.values(textures).forEach(texture => texture.dispose());
+    // Debug method to dump all mesh assignments
+    dumpMeshAssignments() {
+        console.log("===== MESH MATERIAL ASSIGNMENTS =====");
+        const assignments = {};
+        
+        this.meshAssignments.forEach((data, meshName) => {
+            assignments[meshName] = data;
         });
-    });
-    this.materialCache.clear();
-    this.loadingPromises.clear();
-    
-    // Clear texture cache
-    textureCache.clearCache();
-}
+        
+        console.table(assignments);
+        return assignments;
+    }
 
+    dispose() {
+        // Dispose existing materials and textures
+        this.textures.forEach(texture => texture.dispose());
+        this.textures.clear();
+        this.materials.forEach(material => material.dispose());
+        this.materials.clear();
+        
+        // Clear caches
+        this.materialCache.forEach(materialSet => {
+            materialSet.forEach(({ material, textures }) => {
+                material.dispose();
+                Object.values(textures).forEach(texture => texture.dispose());
+            });
+        });
+        this.materialCache.clear();
+        this.loadingPromises.clear();
+        
+        // Clear mesh materials
+        this.meshMaterials.forEach(material => material.dispose());
+        this.meshMaterials.clear();
+        
+        // Clear mesh assignments
+        this.meshAssignments.clear();
+        
+        // Clear texture cache
+        textureCache.clearCache();
+    }
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { materialTypes } from './MaterialTypeSelect';
 
 export const TextureContext = createContext(null);
@@ -14,12 +14,13 @@ const DEFAULT_TRANSFORMATIONS = {
 };
 
 export const TextureProvider = ({ children }) => {
+  // 1. State declarations first
   const [layers, setLayers] = useState([]); // Initialize with empty array
   const [activeLayer, setActiveLayer] = useState(null);
   const [activeWorkspace, setActiveWorkspace] = useState('colors');
   const [expandedSections, setExpandedSections] = useState(['colors']);
 
-
+  // 2. Functions and callbacks
   const updateTexturesForSelectedParts = (layerId) => {
     // Find the layer that was updated
     const updatedLayer = layers.find(layer => layer.id === layerId);
@@ -45,49 +46,76 @@ export const TextureProvider = ({ children }) => {
       await compositor.updateMaterial(object, layers);
     });
   };
-  
 
   // Updated transformation handler that works with both object and individual properties
-  
-// Then update the updateTransformation function to call this when selectedParts change
-const updateTransformation = (layerId, updateData, value) => {
-  // Handle the legacy format first (type, value)
-  if (typeof updateData === 'string' && value !== undefined) {
-    // Legacy call with (layerId, type, value)
+  const updateTransformation = (layerId, updateData, value) => {
+    // Handle the legacy format first (type, value)
+    if (typeof updateData === 'string' && value !== undefined) {
+      // Legacy call with (layerId, type, value)
+      setLayers(prevLayers => 
+        prevLayers.map(layer => {
+          if (layer.id === layerId) {
+            return {
+              ...layer,
+              transformations: {
+                ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
+                [updateData]: value
+              }
+            };
+          }
+          return layer;
+        })
+      );
+      return;
+    }
+
+    // Handle the new unified format
     setLayers(prevLayers => 
       prevLayers.map(layer => {
         if (layer.id === layerId) {
           return {
             ...layer,
-            transformations: {
-              ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
-              [updateData]: value
-            }
+            // Update transformations if included
+            ...(updateData.transformations ? {
+              transformations: {
+                ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
+                ...updateData.transformations
+              }
+            } : {}),
+            // Update material properties if included
+            ...(updateData.materialProperties ? {
+              materialProperties: {
+                ...(layer.materialProperties || {}),
+                ...updateData.materialProperties
+              }
+            } : {}),
+            // Update selected parts if included
+            ...(updateData.selectedParts !== undefined ? {
+              selectedParts: updateData.selectedParts
+            } : {})
           };
         }
         return layer;
       })
     );
-    return;
-  }
 
-  // Handle the new unified format
-  setLayers(prevLayers => 
-    prevLayers.map(layer => {
-      if (layer.id === layerId) {
+    // Update active layer if it's the same
+    if (activeLayer?.id === layerId) {
+      setActiveLayer(prev => {
+        if (!prev) return prev;
         return {
-          ...layer,
+          ...prev,
           // Update transformations if included
           ...(updateData.transformations ? {
             transformations: {
-              ...(layer.transformations || DEFAULT_TRANSFORMATIONS),
+              ...(prev.transformations || DEFAULT_TRANSFORMATIONS),
               ...updateData.transformations
             }
           } : {}),
           // Update material properties if included
           ...(updateData.materialProperties ? {
             materialProperties: {
-              ...(layer.materialProperties || {}),
+              ...(prev.materialProperties || {}),
               ...updateData.materialProperties
             }
           } : {}),
@@ -96,44 +124,14 @@ const updateTransformation = (layerId, updateData, value) => {
             selectedParts: updateData.selectedParts
           } : {})
         };
-      }
-      return layer;
-    })
-  );
-
-  // Update active layer if it's the same
-  if (activeLayer?.id === layerId) {
-    setActiveLayer(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        // Update transformations if included
-        ...(updateData.transformations ? {
-          transformations: {
-            ...(prev.transformations || DEFAULT_TRANSFORMATIONS),
-            ...updateData.transformations
-          }
-        } : {}),
-        // Update material properties if included
-        ...(updateData.materialProperties ? {
-          materialProperties: {
-            ...(prev.materialProperties || {}),
-            ...updateData.materialProperties
-          }
-        } : {}),
-        // Update selected parts if included
-        ...(updateData.selectedParts !== undefined ? {
-          selectedParts: updateData.selectedParts
-        } : {})
-      };
-    });
-  }
-  
-  if (updateData.selectedParts !== undefined) {
-    // Add a slight delay to ensure state is updated
-    setTimeout(() => updateTexturesForSelectedParts(layerId), 50);
-  }
-};
+      });
+    }
+    
+    if (updateData.selectedParts !== undefined) {
+      // Add a slight delay to ensure state is updated
+      setTimeout(() => updateTexturesForSelectedParts(layerId), 50);
+    }
+  };
 
   const updateMaterialType = (layerId, materialType) => {
     setLayers(prevLayers =>
@@ -298,6 +296,7 @@ const updateTransformation = (layerId, updateData, value) => {
     );
   };
 
+  // 3. Create the value object
   const value = {
     // State
     layers,
@@ -327,8 +326,27 @@ const updateTransformation = (layerId, updateData, value) => {
     toggleSection
   };
 
+  // 4. Add useEffect hooks AFTER the value object is defined
+  useEffect(() => {
+    // Expose layers through window for consistent access
+    window.getAllTextureLayersForUpdate = () => layers;
+    
+    // Mark context element for potential DOM querying if needed
+    const contextElement = document.querySelector('#texture-context-provider');
+    if (contextElement) {
+      contextElement.textureContext = { layers };
+      contextElement.dataset.textureContext = 'true';
+    }
+    
+    return () => {
+      // Clean up on unmount
+      delete window.getAllTextureLayersForUpdate;
+    };
+  }, [layers]);
+
+  // 5. Return the provider with the value
   return (
-    <TextureContext.Provider value={value}>
+    <TextureContext.Provider value={value} id="texture-context-provider">
       {children}
     </TextureContext.Provider>
   );

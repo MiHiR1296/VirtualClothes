@@ -8,6 +8,7 @@ export const HDRI_OPTIONS = {
         name: "Studio",
         path: './Textures/lebombo_2k.exr',
         defaultIntensity: 0.1,
+        defaultRotation: 45,
         description: "Clean studio lighting setup"
     },
     warehouse: {

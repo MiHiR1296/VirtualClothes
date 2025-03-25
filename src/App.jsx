@@ -9,6 +9,7 @@ import { getModelsByCategory } from './modelLoader';
 import HDRIControls from './HDRIControls';
 import TechPack from './TechPack';
 import PantoneColorPicker from './PantoneColorPicker';
+import ResizableSidebar from './ResizableSidebar';
 
 // Categorized Model Select Component
 const CategorizedModelSelect = ({ selectedModel, onChange }) => {
@@ -33,13 +34,65 @@ const CategorizedModelSelect = ({ selectedModel, onChange }) => {
   );
 };
 
+window.colorManager = {
+  // Apply the exact color from userData to a material
+  applyExactColor: function(object) {
+    if (!object || !object.material) return false;
+    
+    // If we have a stored exact color, use it
+    if (object.userData && object.userData.exactColor) {
+      // Apply it directly to the material
+      object.material.color.set(object.userData.exactColor);
+      object.material.needsUpdate = true;
+      
+      console.log(`Applied stored color ${object.userData.exactColor} to ${object.name}`);
+      return true;
+    }
+    return false;
+  },
+  
+  // Store and apply a new color
+  storeExactColor: function(object, colorValue) {
+    if (!object || !object.material) return false;
+    
+    // Store the exact color
+    if (!object.userData) object.userData = {};
+    object.userData.exactColor = colorValue;
+    
+    // Apply it to the material
+    object.material.color.set(colorValue);
+    object.material.needsUpdate = true;
+    
+    console.log(`Stored and applied color ${colorValue} to ${object.name}`);
+    return true;
+  },
+
+  getExactColorForPicker: function(object) {
+    // Always return the stored exact color if available
+    if (object && object.userData && object.userData.exactColor) {
+      return object.userData.exactColor;
+    }
+    // Otherwise, fall back to the material color
+    else if (object && object.material && object.material.color) {
+      const hexColor = '#' + object.material.color.getHexString();
+      // Store it for future use
+      if (!object.userData) object.userData = {};
+      object.userData.exactColor = hexColor;
+      return hexColor;
+    }
+    // Default fallback
+    return "#ffffff";
+  }
+
+};
+
 export default function App() {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState('men_polo_hs');
   const [selectedMaterial, setSelectedMaterial] = useState('cotton');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(true);
   const [selectedModelRoughness, setSelectedModelRoughness] = useState(0.8);
   const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.1);
   const [isLoading, setIsLoading] = useState(false);
@@ -185,197 +238,164 @@ export default function App() {
             <ControlsTooltip />
           </div>
 
-          {/* Sidebar */}
-          <div 
-            className={`fixed right-0 top-14 bottom-0 w-80 bg-gray-800 border-l border-gray-700 
-                      transform transition-transform duration-300 ease-in-out z-10 overflow-y-auto
-                      ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
-          >
-            <div className="h-full overflow-y-auto p-6 space-y-6">
-              {/* HDRI Controls */}
-              <div className="mb-6 border-b border-gray-700 pb-6">
+          {/* Resizable Sidebar */}
+          <ResizableSidebar isOpen={isSidebarOpen}>
+            {/* HDRI Controls */}
+            <div className="mb-6 border-b border-gray-700 pb-6">
               <HDRIControls
-                  onHDRIChange={(path, intensity) => handleHDRIChange(path, intensity)}
-                  onRotationChange={handleHDRIRotation}
-                  onIntensityChange={handleHDRIIntensity}
-                  onBackgroundToggle={(show) => {
-                      if (appRef.current?.lightingSystem) {
-                          appRef.current.lightingSystem.toggleBackground(show);
-                      }
-                  }}
+                onHDRIChange={(path, intensity) => handleHDRIChange(path, intensity)}
+                onRotationChange={handleHDRIRotation}
+                onIntensityChange={handleHDRIIntensity}
+                onBackgroundToggle={(show) => {
+                    if (appRef.current?.lightingSystem) {
+                        appRef.current.lightingSystem.toggleBackground(show);
+                    }
+                }}
               />
-              </div>
+            </div>
 
-              {/* Material Selection */}
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Palette className="w-4 h-4" /> Materials
-                </h2>
-                <select 
-                  id="materialSelect"
-                  className="w-full bg-gray-700 rounded px-3 py-2 mb-3 border border-gray-600"
-                  value={selectedMaterial}
-                  onChange={handleMaterialChange}
-                >
-                  <option value="cotton">Cotton</option>
-                  <option value="nylon">Nylon</option>
-                  <option value="leather">Leather</option>
-                  <option value="metal">Metal</option>
-                  <option value="plastic">Plastic</option>
-                </select>
-              </div>
+            {/* Material Selection */}
+            <div>
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Palette className="w-4 h-4" /> Materials
+              </h2>
+              <select 
+                id="materialSelect"
+                className="w-full bg-gray-700 rounded px-3 py-2 mb-3 border border-gray-600"
+                value={selectedMaterial}
+                onChange={handleMaterialChange}
+              >
+                <option value="cotton">Cotton</option>
+                <option value="nylon">Nylon</option>
+                <option value="leather">Leather</option>
+                <option value="metal">Metal</option>
+                <option value="plastic">Plastic</option>
+              </select>
+            </div>
 
-              {/* Material Properties */}
-              <div id="workspace-colors">
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Settings className="w-4 h-4" /> Properties
-                </h2>
-                <div className="space-y-4">
-                  {/* Selected Model Display */}
-                  <div id="modelNameDisplay" className="text-sm text-gray-400">
-                    Selected: None
-                  </div>
+            {/* Material Properties */}
+            <div id="workspace-colors">
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Settings className="w-4 h-4" /> Properties
+              </h2>
+              <div className="space-y-4">
+                {/* Selected Model Display */}
+                <div id="modelNameDisplay" className="text-sm text-gray-400">
+                  Selected: None
+                </div>
+                
+               
+                
+                {/* Color Picker */}
+                <div>
+                  <label className="block mb-2 text-sm">Color</label>
                   
-                  {/* Color Picker */}
-                  <div>
-                      <label className="block mb-2 text-sm">Color</label>
-                      <PantoneColorPicker 
-                        onColorSelect={(color) => {
-                          if (window.selectedModelPart) {
-                            const material = window.selectedModelPart.material;
-                            // Store exact color in userData for consistent color picking
-                            window.selectedModelPart.userData.exactColor = color;
-                            // Update actual material color
-                            material.color.set(color);
-                            material.needsUpdate = true;
-                            // Update color picker UI
-                            document.getElementById('colorPicker').value = color;
-                          }
-                        }} 
-                      />
+                  <PantoneColorPicker 
+                    currentColor={window.selectedModelPart 
+                      ? window.colorManager.getExactColorForPicker(window.selectedModelPart) 
+                      : "#ffffff"}
+                    onColorSelect={(color) => {
+                      if (window.selectedModelPart) {
+                        // Use the global color manager to store and apply the color
+                        window.colorManager.storeExactColor(window.selectedModelPart, color);
+                        
+                        // Update color picker UI
+                        const colorPicker = document.getElementById('colorPicker');
+                        if (colorPicker) {
+                          colorPicker.value = color;
+                        }
+                      }
+                    }} 
+                  />
+                  <input 
+                    type="color" 
+                    id="colorPicker"
+                    className="w-full h-10 rounded bg-gray-700 border border-gray-600" 
+                    onInput={(e) => {
+                      // IMPORTANT: Directly use the event.target.value without any conversion
+                      if (window.selectedModelPart) {
+                        const exactColor = e.target.value;
+                        window.colorManager.storeExactColor(window.selectedModelPart, exactColor);
+                      }
+                    }}
+                  />
+                </div>
+
+                 {/* Toggle for Advanced Settings */}
+                 <button
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 
+                          text-gray-300 rounded flex items-center justify-between"
+                >
+                  <span>Advanced Material Properties</span>
+                  <ChevronRight 
+                    className={`w-4 h-4 transition-transform ${showAdvancedSettings ? 'rotate-90' : ''}`}
+                  />
+                </button>
+
+                {showAdvancedSettings && (
+                  <div className="mt-2 space-y-4 p-3 bg-gray-700/50 rounded-lg">
+                    {/* Model Part Roughness Slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>Model Part Roughness</span>
+                        <span id="modelRoughnessValue">{selectedModelRoughness.toFixed(2)}</span>
+                      </div>
                       <input 
-                        type="color" 
-                        id="colorPicker"
-                        className="w-full h-10 rounded bg-gray-700 border border-gray-600" 
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={selectedModelRoughness}
+                        onChange={(e) => {
+                          const roughness = parseFloat(e.target.value);
+                          window.updateSelectedModelMaterial?.(roughness, selectedModelMetalness);
+                        }}
+                        className="w-full accent-blue-500"
                       />
                     </div>
 
-                  {/* Advanced Settings */}
-                  <div>
-                    <button
-                      onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-300 
-                               bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                    >
-                      <ChevronRight 
-                        className={`w-4 h-4 transition-transform ${showAdvancedSettings ? 'rotate-90' : ''}`}
-                      />
-                      Advanced Settings
-                    </button>
-
-                    {showAdvancedSettings && (
-                      <div className="mt-2 space-y-4 p-3 bg-gray-700/50 rounded-lg">
-                        {/* Model Part Roughness Slider */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-gray-400">
-                            <span>Model Part Roughness</span>
-                            <span>{selectedModelRoughness.toFixed(2)}</span>
-                          </div>
-                          <input 
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={selectedModelRoughness}
-                            onChange={(e) => {
-                              const roughness = parseFloat(e.target.value);
-                              window.updateSelectedModelMaterial?.(roughness, selectedModelMetalness);
-                            }}
-                            className="w-full accent-blue-500"
-                          />
-                        </div>
-
-                        {/* Model Part Metalness Slider */}
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-gray-400">
-                            <span>Model Part Metalness</span>
-                            <span>{selectedModelMetalness.toFixed(2)}</span>
-                          </div>
-                          <input 
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={selectedModelMetalness}
-                            onChange={(e) => {
-                              const metalness = parseFloat(e.target.value);
-                              window.updateSelectedModelMaterial?.(selectedModelRoughness, metalness);
-                            }}
-                            className="w-full accent-blue-500"
-                          />
-                        </div>
-
-                        <button
-                        onClick={() => {
-                          if (window.selectedModelPart) {
-                            const material = window.selectedModelPart.material;
-                            console.log('Current material properties:', {
-                              name: window.selectedModelPart.name,
-                              roughness: material.roughness,
-                              metalness: material.metalness,
-                              type: material.type,
-                              uuid: material.uuid
-                            });
-                            
-                            // Force update the material
-                            material.metalness = selectedModelMetalness;
-                            material.roughness = selectedModelRoughness;
-                            material.needsUpdate = true;
-                            
-                            console.log('Updated to:', {
-                              roughness: material.roughness,
-                              metalness: material.metalness
-                            });
-                            
-                            // Verify if the change persists
-                            setTimeout(() => {
-                              console.log('After timeout:', {
-                                roughness: material.roughness,
-                                metalness: material.metalness
-                              });
-                            }, 500);
-                          } else {
-                            console.log('No part selected');
-                          }
-                        }}
-                        className="mt-2 w-full p-2 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded"
-                      >
-                        Debug Material Properties
-                      </button>
+                    {/* Model Part Metalness Slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>Model Part Metalness</span>
+                        <span id="modelMetalnessValue">{selectedModelMetalness.toFixed(2)}</span>
                       </div>
-                    )}
+                      <input 
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={selectedModelMetalness}
+                        onChange={(e) => {
+                          const metalness = parseFloat(e.target.value);
+                          window.updateSelectedModelMaterial?.(selectedModelRoughness, metalness);
+                        }}
+                        className="w-full accent-blue-500"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
+            </div>
 
               {/* Texture Layer Manager */}
-              <div id="materialSelect-container"></div>
-              <TextureLayerManager />
-              
-              {/* TechPack Generator - Moved to bottom */}
-              {appRef.current && (
-                <TechPack 
-                  selectedModel={selectedModel}
-                  selectedMaterial={selectedMaterial}
-                  materialManager={appRef.current.materialManager}
-                  renderer={appRef.current.renderer}
-                  scene={appRef.current.scene}
-                  camera={appRef.current.camera}
-                  controls={appRef.current.controls}
-                />
-              )}
-            </div>
-          </div>
+            <div id="materialSelect-container"></div>
+            <TextureLayerManager />
+            
+            {/* TechPack Generator */}
+            {appRef.current && (
+              <TechPack 
+                selectedModel={selectedModel}
+                selectedMaterial={selectedMaterial}
+                materialManager={appRef.current.materialManager}
+                renderer={appRef.current.renderer}
+                scene={appRef.current.scene}
+                camera={appRef.current.camera}
+                controls={appRef.current.controls}
+              />
+            )}
+          </ResizableSidebar>
         </div>
 
         {/* UV Editor Container */}

@@ -37,10 +37,10 @@ export class ThreeApplication {
             this.scene.userData.controls = this.controls;
 
             // Expose these objects to the global scope for the texture manipulator
-            window.scene = scene;
-            window.camera = camera;
-            window.renderer = renderer;
-            window.controls = controls;
+            // window.scene = scene;
+            // window.camera = camera;
+            // window.renderer = renderer;
+            // window.controls = controls;
 
             this.lightingSystem = new LightingSystem(scene, renderer);
             this.materialManager = new MaterialManager();
@@ -220,10 +220,10 @@ export class ThreeApplication {
     }
     dispose() {
         // Clean up global references
-        window.scene = null;
-        window.camera = null;
-        window.renderer = null;
-        window.controls = null;
+        // window.scene = null;
+        // window.camera = null;
+        // window.renderer = null;
+        // window.controls = null;
         
         this.clearAllResources();
         

@@ -7,24 +7,61 @@ const TextureControlsWrapper = () => {
   const [isActive, setIsActive] = useState(false);
   const [activeTool, setActiveTool] = useState('move');
   const [manipulatorInitialized, setManipulatorInitialized] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const manipulatorRef = useRef(null);
   
   // Get the texture context
   const textureContext = useTextureContext();
   const { activeLayer, updateTransformation } = textureContext;
 
-  // Initialize or get the manipulator
+  // Check if scene objects are ready
   useEffect(() => {
-    // First check if we already have an instance
-    if (window.textureManipulator) {
-      manipulatorRef.current = window.textureManipulator;
-      setManipulatorInitialized(true);
-      return;
+    // Function to check if all required objects are available
+    const checkSceneObjects = () => {
+      const hasScene = !!window.scene;
+      const hasCamera = !!window.camera;
+      const hasRenderer = !!window.renderer;
+      return hasScene && hasCamera && hasRenderer;
+    };
+
+    // Initial check
+    setSceneReady(checkSceneObjects());
+
+    // If not ready, set up a listener for model-loaded event
+    if (!checkSceneObjects()) {
+      const handleModelLoaded = () => {
+        // Check again after model is loaded
+        console.log('Model loaded, checking scene objects availability...');
+        const ready = checkSceneObjects();
+        setSceneReady(ready);
+        if (ready) {
+          console.log('Scene objects are now available');
+        }
+      };
+
+      window.addEventListener('model-loaded', handleModelLoaded);
+      
+      // Also set up an interval to periodically check (as a fallback)
+      const intervalId = setInterval(() => {
+        if (checkSceneObjects()) {
+          setSceneReady(true);
+          clearInterval(intervalId);
+          console.log('Scene objects found via interval check');
+        }
+      }, 1000);
+      
+      // Clean up
+      return () => {
+        window.removeEventListener('model-loaded', handleModelLoaded);
+        clearInterval(intervalId);
+      };
     }
-    
-    // Check if scene objects are available
-    if (window.scene && window.camera && window.renderer) {
-      console.log('Initializing texture manipulator...');
+  }, []);
+
+  // Initialize manipulator once scene is ready
+  useEffect(() => {
+    if (sceneReady && !manipulatorInitialized) {
+      console.log('Initializing texture manipulator with scene objects...');
       
       try {
         // Create a new manipulator instance
@@ -44,10 +81,8 @@ const TextureControlsWrapper = () => {
       } catch (error) {
         console.error('Failed to initialize texture manipulator:', error);
       }
-    } else {
-      console.warn('Scene objects not available for texture manipulator');
     }
-  }, []);
+  }, [sceneReady, manipulatorInitialized, textureContext]);
   
   // Update texture context when it changes
   useEffect(() => {
@@ -100,30 +135,31 @@ const TextureControlsWrapper = () => {
 
   // Manual initialization if needed
   const initializeManipulator = () => {
-    if (window.scene && window.camera && window.renderer) {
-      console.log('Manually initializing texture manipulator...');
+    if (!sceneReady) {
+      alert('Scene objects not available. Please wait for the 3D model to fully load first.');
+      return;
+    }
+    
+    console.log('Manually initializing texture manipulator...');
+    
+    try {
+      // Create a new manipulator instance
+      const manipulator = new DirectTextureManipulator(
+        window.scene,
+        window.camera,
+        window.renderer,
+        textureContext
+      );
       
-      try {
-        // Create a new manipulator instance
-        const manipulator = new DirectTextureManipulator(
-          window.scene,
-          window.camera,
-          window.renderer,
-          textureContext
-        );
-        
-        // Store globally and in local ref
-        window.textureManipulator = manipulator;
-        manipulatorRef.current = manipulator;
-        setManipulatorInitialized(true);
-        
-        console.log('Texture manipulator initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize texture manipulator:', error);
-      }
-    } else {
-      console.warn('Scene objects not available for texture manipulator');
-      alert('Scene objects not available. Make sure the 3D model is loaded first.');
+      // Store globally and in local ref
+      window.textureManipulator = manipulator;
+      manipulatorRef.current = manipulator;
+      setManipulatorInitialized(true);
+      
+      console.log('Texture manipulator initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize texture manipulator:', error);
+      alert('Error initializing texture manipulator: ' + error.message);
     }
   };
 
@@ -150,14 +186,21 @@ const TextureControlsWrapper = () => {
         ) : (
           <button
             onClick={initializeManipulator}
-            className="p-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs"
+            disabled={!sceneReady}
+            className={`p-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs ${!sceneReady ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Initialize
           </button>
         )}
       </div>
 
-      {!manipulatorInitialized && (
+      {!sceneReady && (
+        <div className="p-2 bg-yellow-800/30 rounded text-yellow-300 text-xs mb-3">
+          <p>Waiting for 3D model to load... Scene objects not yet available.</p>
+        </div>
+      )}
+
+      {sceneReady && !manipulatorInitialized && (
         <div className="p-2 bg-yellow-800/30 rounded text-yellow-300 text-xs mb-3">
           <p>Texture manipulation controls need to be initialized. Click the Initialize button.</p>
         </div>
