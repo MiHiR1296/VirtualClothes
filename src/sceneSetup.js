@@ -30,7 +30,7 @@ export class SceneManager {
     canvas.height = 2;
 
     const context = canvas.getContext('2d');
-    const gradient = context.createLinearGradient(0, 0, 0, 2);
+    const gradient = context.createLinearGradient(0, 0, 0, 8);
     gradient.addColorStop(0, `#${topColor.getHexString()}`);
     gradient.addColorStop(0.5, `#${midColor.getHexString()}`);
     gradient.addColorStop(1, `#${bottomColor.getHexString()}`);

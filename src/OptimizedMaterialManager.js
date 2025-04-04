@@ -167,10 +167,13 @@ export class OptimizedMaterialManager {
             if (this.debug) {
                 switch(type) {
                     case 'inside':
-                        baseMaterial.color.set(0xfe9762); // Light blue
+                        baseMaterial.color.set(0xf5d000); // Light blue
                         break;
                     case 'outside':
-                        baseMaterial.color.set(0xfe9762); // Light green
+                        baseMaterial.color.set(0xf5d000); // Light green
+                        break;
+                    case 'zipper':
+                        baseMaterial.color.set(0xfff000); // Light green
                         break;
                     case 'button':
                         baseMaterial.color.set(0xce2029); // Light pink
@@ -178,8 +181,8 @@ export class OptimizedMaterialManager {
                     case 'thread':
                         baseMaterial.color.set(0xeecc88); // Light orange
                         break;
-                    case 'metal':
-                        baseMaterial.color.set(0xdddddd); // Light gray
+                    case 'metal':   
+                        baseMaterial.color.set(0x000000); // Light gray
                         break;
                 }
             }

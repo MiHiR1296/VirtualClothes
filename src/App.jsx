@@ -10,6 +10,7 @@ import HDRIControls from './HDRIControls';
 import TechPack from './TechPack';
 import PantoneColorPicker from './PantoneColorPicker';
 import ResizableSidebar from './ResizableSidebar';
+import MultiSelectionIndicator from './MultiSelectionIndicator';
 
 // Categorized Model Select Component
 const CategorizedModelSelect = ({ selectedModel, onChange }) => {
@@ -51,8 +52,19 @@ window.colorManager = {
     return false;
   },
   
-  // Store and apply a new color
+  // Store and apply a new color - now handles both single object and arrays
   storeExactColor: function(object, colorValue) {
+    // Check if we're dealing with an array of objects (multi-selection)
+    if (Array.isArray(object)) {
+      const results = [];
+      // Apply to each object in the array
+      object.forEach(obj => {
+        results.push(this.storeExactColor(obj, colorValue));
+      });
+      return results.every(result => result === true);
+    }
+    
+    // Handle single object
     if (!object || !object.material) return false;
     
     // Store the exact color
@@ -83,7 +95,6 @@ window.colorManager = {
     // Default fallback
     return "#ffffff";
   }
-
 };
 
 export default function App() {
@@ -92,10 +103,10 @@ export default function App() {
   const [selectedModel, setSelectedModel] = useState('men_polo_hs');
   const [selectedMaterial, setSelectedMaterial] = useState('cotton');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(true);
-  const [selectedModelRoughness, setSelectedModelRoughness] = useState(0.8);
-  const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.1);
+  const [selectedModelRoughness, setSelectedModelRoughness] = useState(1.0);
+  const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.05);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPartsCount, setSelectedPartsCount] = useState(0);
 
   useEffect(() => {
     if (!canvasRef.current || appRef.current) return;
@@ -108,36 +119,49 @@ export default function App() {
         await app.initPromise;
 
         // Setup global reference for model roughness/metalness update
-        window.updateSelectedModelMaterial = (roughness, metalness) => {
-          if (window.selectedModelPart && !window.selectedModelPart.name.includes('Fronttex') && 
-              !window.selectedModelPart.name.includes('Backtex')) {
-            const material = window.selectedModelPart.material;
+        window.updateSelectedModelMaterial = () => {
+          if (!window.selectedModelPart) return;
+          
+          if (window.selectedModelPart.name.includes('Fronttex') || 
+              window.selectedModelPart.name.includes('Backtex')) return;
+          
+          // Make sure we have userData
+          if (!window.selectedModelPart.userData) {
+            window.selectedModelPart.userData = {};
+          }
+          
+          // Use preset values
+          const presetRoughness = 1.0;
+          const presetMetalness = 0.05;
+          
+          // Store the values in userData
+          window.selectedModelPart.userData.exactRoughness = presetRoughness;
+          window.selectedModelPart.userData.exactMetalness = presetMetalness;
+          
+          // Check if the material exists
+          if (window.selectedModelPart.material) {
+            // Capture original values we want to preserve
+            const origOpacity = window.selectedModelPart.material.opacity !== undefined ? 
+                                window.selectedModelPart.material.opacity : 1.0;
+            const origTransparent = window.selectedModelPart.material.transparent !== undefined ? 
+                                  window.selectedModelPart.material.transparent : false;
             
-            // Store exact values in userData to ensure consistency
-            window.selectedModelPart.userData.exactRoughness = roughness;
-            window.selectedModelPart.userData.exactMetalness = metalness;
+            // Apply the preset values
+            window.selectedModelPart.material.roughness = presetRoughness;
+            window.selectedModelPart.material.metalness = presetMetalness;
             
-            // Apply values to material
-            material.roughness = roughness;
-            material.metalness = metalness;
-            material.needsUpdate = true;
+            // Restore original opacity/transparency values
+            window.selectedModelPart.material.opacity = origOpacity;
+            window.selectedModelPart.material.transparent = origTransparent;
             
-            // Update UI state
-            setSelectedModelRoughness(roughness);
-            setSelectedModelMetalness(metalness);
+            // Force material update
+            window.selectedModelPart.material.needsUpdate = true;
             
-            // Update any sliders created in eventHandler
-            const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
-            const metalSlider = document.getElementById('modelPartMetalnessSlider');
-            const roughnessValue = document.getElementById('modelRoughnessValue');
-            const metalValue = document.getElementById('modelMetalnessValue');
+            // Update React state
+            setSelectedModelRoughness(presetRoughness);
+            setSelectedModelMetalness(presetMetalness);
             
-            if (roughnessSlider) roughnessSlider.value = roughness;
-            if (metalSlider) metalSlider.value = metalness;
-            if (roughnessValue) roughnessValue.textContent = roughness.toFixed(2);
-            if (metalValue) metalValue.textContent = metalness.toFixed(2);
-            
-            console.log(`Material properties updated - Roughness: ${roughness}, Metalness: ${metalness}`);
+            console.log(`Material set to preset values: roughness=${presetRoughness}, metalness=${presetMetalness}`);
           }
         };
         
@@ -160,6 +184,70 @@ export default function App() {
     };
   }, []);
 
+  // Add an effect to watch for changes to the selection
+  useEffect(() => {
+    // Function to update the selection count
+    const updateSelectionCount = () => {
+      const partsCount = window.selectedModelParts?.length || 0;
+      setSelectedPartsCount(partsCount);
+    };
+    
+    // Set up event listener for selection changes
+    window.addEventListener('model-part-selected', updateSelectionCount);
+    
+    // Initial check
+    updateSelectionCount();
+    
+    // Set up an interval to check the selection count (as a fallback)
+    const intervalId = setInterval(updateSelectionCount, 500);
+    
+    return () => {
+      window.removeEventListener('model-part-selected', updateSelectionCount);
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  // Function to clear the selection
+  const clearSelection = () => {
+    window.selectedModelPart = null;
+    window.selectedModelParts = [];
+    
+    // This will trigger an update in the eventHandler
+    if (appRef.current?.eventHandler) {
+      appRef.current.eventHandler.selectedModelParts = [];
+      appRef.current.eventHandler.updateModelNameDisplay('None');
+    }
+    
+    setSelectedPartsCount(0);
+  };
+
+  const applyPresetsToAllParts = () => {
+    if (!appRef.current || !appRef.current.scene) return;
+    
+    // Find all mesh objects that aren't texture meshes
+    appRef.current.scene.traverse((object) => {
+      if (object.isMesh && 
+          !object.name.includes('Fronttex') && 
+          !object.name.includes('Backtex') &&
+          object.userData.isImported) {
+        
+        // Save the current object as selected
+        const previousSelected = window.selectedModelPart;
+        
+        // Temporarily set this object as selected
+        window.selectedModelPart = object;
+        
+        // Apply preset values
+        window.updateSelectedModelMaterial();
+        
+        // Restore previous selection
+        window.selectedModelPart = previousSelected;
+      }
+    });
+    
+    console.log("Applied preset material properties to all model parts");
+  };
+
   const handleModelChange = async (e) => {
     if (!appRef.current || isLoading) return;
 
@@ -170,10 +258,20 @@ export default function App() {
       
       await appRef.current.loadModel(modelId);
 
-      // Restore material settings if they were customized
-      if (selectedModelRoughness !== 1.0 || selectedModelMetalness !== 0.1) {
-        window.updateSelectedModelMaterial?.(selectedModelRoughness, selectedModelMetalness);
-      }
+      // Apply preset material values after model loads
+      setTimeout(() => {
+        // Set state values to match presets
+        setSelectedModelRoughness(1.0);
+        setSelectedModelMetalness(0.05);
+        
+        // Apply to selected parts if any
+        if (window.selectedModelPart) {
+          window.updateSelectedModelMaterial();
+        }
+        
+        // Apply to all model parts for consistency
+        applyPresetsToAllParts();
+      }, 500); // Short delay to ensure model is fully loaded
     } catch (error) {
       console.error('Error loading model:', error);
     } finally {
@@ -284,7 +382,11 @@ export default function App() {
                   Selected: None
                 </div>
                 
-               
+                {/* Multi-Selection Indicator */}
+                <MultiSelectionIndicator 
+                  count={selectedPartsCount} 
+                  onClear={clearSelection} 
+                />
                 
                 {/* Color Picker */}
                 <div>
@@ -296,8 +398,14 @@ export default function App() {
                       : "#ffffff"}
                     onColorSelect={(color) => {
                       if (window.selectedModelPart) {
-                        // Use the global color manager to store and apply the color
-                        window.colorManager.storeExactColor(window.selectedModelPart, color);
+                        // Check if we have multiple selections
+                        if (window.selectedModelParts && window.selectedModelParts.length > 1) {
+                          // Use the global color manager to store and apply the color to all selected parts
+                          window.colorManager.storeExactColor(window.selectedModelParts, color);
+                        } else {
+                          // Apply to single selection
+                          window.colorManager.storeExactColor(window.selectedModelPart, color);
+                        }
                         
                         // Update color picker UI
                         const colorPicker = document.getElementById('colorPicker');
@@ -312,74 +420,24 @@ export default function App() {
                     id="colorPicker"
                     className="w-full h-10 rounded bg-gray-700 border border-gray-600" 
                     onInput={(e) => {
-                      // IMPORTANT: Directly use the event.target.value without any conversion
-                      if (window.selectedModelPart) {
-                        const exactColor = e.target.value;
+                      // Get the color value directly from the input
+                      const exactColor = e.target.value;
+                      
+                      // Check if we have multiple selections
+                      if (window.selectedModelParts && window.selectedModelParts.length > 1) {
+                        // Apply to all selected parts
+                        window.colorManager.storeExactColor(window.selectedModelParts, exactColor);
+                      } else if (window.selectedModelPart) {
+                        // Apply to single selection
                         window.colorManager.storeExactColor(window.selectedModelPart, exactColor);
                       }
                     }}
                   />
                 </div>
-
-                 {/* Toggle for Advanced Settings */}
-                 <button
-                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 
-                          text-gray-300 rounded flex items-center justify-between"
-                >
-                  <span>Advanced Material Properties</span>
-                  <ChevronRight 
-                    className={`w-4 h-4 transition-transform ${showAdvancedSettings ? 'rotate-90' : ''}`}
-                  />
-                </button>
-
-                {showAdvancedSettings && (
-                  <div className="mt-2 space-y-4 p-3 bg-gray-700/50 rounded-lg">
-                    {/* Model Part Roughness Slider */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>Model Part Roughness</span>
-                        <span id="modelRoughnessValue">{selectedModelRoughness.toFixed(2)}</span>
-                      </div>
-                      <input 
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={selectedModelRoughness}
-                        onChange={(e) => {
-                          const roughness = parseFloat(e.target.value);
-                          window.updateSelectedModelMaterial?.(roughness, selectedModelMetalness);
-                        }}
-                        className="w-full accent-blue-500"
-                      />
-                    </div>
-
-                    {/* Model Part Metalness Slider */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>Model Part Metalness</span>
-                        <span id="modelMetalnessValue">{selectedModelMetalness.toFixed(2)}</span>
-                      </div>
-                      <input 
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={selectedModelMetalness}
-                        onChange={(e) => {
-                          const metalness = parseFloat(e.target.value);
-                          window.updateSelectedModelMaterial?.(selectedModelRoughness, metalness);
-                        }}
-                        className="w-full accent-blue-500"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
-              {/* Texture Layer Manager */}
+            {/* Texture Layer Manager */}
             <div id="materialSelect-container"></div>
             <TextureLayerManager />
             

@@ -49,17 +49,17 @@ export class PostProcessing {
             new THREE.Vector2(window.innerWidth, window.innerHeight),
             0.011,     // Reduced bloom strength
             0.011,     // Reduced radius
-            5.1    // Increased threshold to only catch the brightest spots
+            3.1    // Increased threshold to only catch the brightest spots
         );
         this.composer.addPass(bloomPass);
         
         // Extremely subtle depth of field - using the nice values
-        const bokehPass = new BokehPass(this.scene, this.camera, {
-            focus: 30.0,
-            aperture: 2.2,
-            maxblur: 0.001
-        });
-        this.composer.addPass(bokehPass);
+        // const bokehPass = new BokehPass(this.scene, this.camera, {
+        //     focus: 200.0,
+        //     aperture: 2.0,
+        //     maxblur: 0.001
+        // });
+        // this.composer.addPass(bokehPass);
         
         // Gamma correction for natural color appearance
         const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
@@ -67,8 +67,8 @@ export class PostProcessing {
         
         // Very subtle brightness/contrast adjustment - using the nice values
         const brightnessContrastPass = new ShaderPass(BrightnessContrastShader);
-        brightnessContrastPass.uniforms.brightness.value = -0.12;    // Reset to neutral
-        brightnessContrastPass.uniforms.contrast.value = 0.02;     // Very subtle contrast
+        brightnessContrastPass.uniforms.brightness.value = -0.01;    // Reset to neutral
+        brightnessContrastPass.uniforms.contrast.value = 0.1;     // Very subtle contrast
         this.composer.addPass(brightnessContrastPass);
         
         // Vignette effect - using the nice values

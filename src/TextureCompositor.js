@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { materialTypes, NORMAL_MAP_PATHS } from './MaterialTypeSelect';
-import { loadNormalMap } from './textureUtils';
+
 
 export class TextureCompositor {
     constructor() {
@@ -250,8 +250,8 @@ export class TextureCompositor {
             for (let i = 0; i < data.length; i += 4) {
                 if (data[i + 3] > 0) {  // If pixel has any opacity
                     // Color correction factors
-                    const colorCorrection = 1.08;  // Slightly higher boost
-                    const contrastBoost = 1.03;    // Subtle contrast enhancement
+                    const colorCorrection = 1.02;  // Slightly higher boost
+                    const contrastBoost = 1.01;    // Subtle contrast enhancement
                     
                     // Apply correction to RGB channels
                     for (let j = 0; j < 3; j++) {

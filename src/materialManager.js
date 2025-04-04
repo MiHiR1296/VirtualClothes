@@ -159,7 +159,7 @@ export class MaterialManager {
             color: preset.baseColor,
             roughness: preset.roughness,
             metalness: preset.metalness,
-            sheen: preset.sheen || 0,
+            sheen: preset.sheen || 1.0,
             sheenRoughness: preset.sheenRoughness || 1.0,
             clearcoat: preset.clearcoat || 0,
             transmission: preset.transmission || 0,

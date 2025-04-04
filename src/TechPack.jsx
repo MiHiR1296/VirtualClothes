@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileDown, Loader, Download, Info, ScissorsSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTextureContext } from './TextureContext';
-import UVMapWithMeasurements from './UVMapWithMeasurements';
 import ModifiedMultiViewCapture from './ModifiedMultiViewCapture';
 import MaterialSpecs from './MaterialSpecs';
 import MeasurementsTable from './MeasurementsTable';

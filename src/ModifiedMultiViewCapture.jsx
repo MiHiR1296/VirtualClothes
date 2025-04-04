@@ -2,7 +2,7 @@ import React, { useState, forwardRef, useImperativeHandle, useEffect, useRef } f
 import { View, RotateCw, Download, ZoomIn, Camera } from 'lucide-react';
 import * as THREE from 'three';
 
-// MultiViewCapture with adjustable camera distance
+// MultiViewCapture with adjustable camera distance - without enhanced lighting
 const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls }, ref) => {
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
@@ -31,124 +31,6 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
     { name: 'Side', rotation: -Math.PI / 2 },
     { name: 'Back', rotation: Math.PI }
   ];
-  
-  // Store original light state and temporary lights
-  const originalLightState = {
-    lights: [],
-    materials: new Map()
-  };
-  const tempLights = [];
-
-  // Enhance lighting for better renders
-  const enhanceLighting = () => {
-    // Store and enhance existing lights
-    scene.traverse(obj => {
-      if (obj.isLight) {
-        originalLightState.lights.push({
-          light: obj,
-          intensity: obj.intensity,
-          castShadow: obj.castShadow || false
-        });
-        
-        // Boost light intensity but don't add shadows to hemisphere lights
-        obj.intensity *= 5.5;
-        if (!(obj.isHemisphereLight || obj.isAmbientLight)) {
-          obj.castShadow = true;
-        }
-      }
-      
-      // Enhance material reflectivity
-      if (obj.material) {
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach(mat => {
-            if (mat.envMapIntensity !== undefined) {
-              const uuid = mat.uuid;
-              if (!originalLightState.materials.has(uuid)) {
-                originalLightState.materials.set(uuid, {
-                  envMapIntensity: mat.envMapIntensity
-                });
-                mat.envMapIntensity = Math.min(mat.envMapIntensity * 2.0, 2.0);
-                mat.needsUpdate = true;
-              }
-            }
-          });
-        } else if (obj.material.envMapIntensity !== undefined) {
-          const uuid = obj.material.uuid;
-          if (!originalLightState.materials.has(uuid)) {
-            originalLightState.materials.set(uuid, {
-              envMapIntensity: obj.material.envMapIntensity
-            });
-            obj.material.envMapIntensity = Math.min(obj.material.envMapIntensity * 2.0, 2.0);
-            obj.material.needsUpdate = true;
-          }
-        }
-      }
-    });
-    
-    // Add temporary lights
-    
-    // Front fill light
-    const frontFill = new THREE.DirectionalLight(0xffffff, 1.5);
-    frontFill.position.set(0, 2, 5);
-    frontFill.castShadow = true;
-    scene.add(frontFill);
-    tempLights.push(frontFill);
-    
-    // Back rim light
-    const backRim = new THREE.DirectionalLight(0xffffff, 0.8);
-    backRim.position.set(0, 3, -5);
-    backRim.castShadow = true;
-    scene.add(backRim);
-    tempLights.push(backRim);
-    
-    // Top light
-    const topLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    topLight.position.set(0, 8, 0);
-    topLight.castShadow = true;
-    scene.add(topLight);
-    tempLights.push(topLight);
-    
-    // Add ambient light to brighten shadows
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    tempLights.push(ambientLight);
-  };
-  
-  // Restore original lighting state
-  const restoreLighting = () => {
-    // Remove temporary lights
-    tempLights.forEach(light => {
-      scene.remove(light);
-    });
-    tempLights.length = 0;
-    
-    // Restore original light intensities
-    originalLightState.lights.forEach(({ light, intensity, castShadow }) => {
-      light.intensity = intensity;
-      light.castShadow = castShadow;
-    });
-    originalLightState.lights = [];
-    
-    // Restore original material properties
-    originalLightState.materials.forEach((props, uuid) => {
-      scene.traverse(obj => {
-        if (obj.material) {
-          if (Array.isArray(obj.material)) {
-            obj.material.forEach(mat => {
-              if (mat.uuid === uuid && mat.envMapIntensity !== undefined) {
-                mat.envMapIntensity = props.envMapIntensity;
-                mat.needsUpdate = true;
-              }
-            });
-          } else if (obj.material.uuid === uuid && obj.material.envMapIntensity !== undefined) {
-            obj.material.envMapIntensity = props.envMapIntensity;
-            obj.material.needsUpdate = true;
-          }
-        }
-      });
-    });
-    originalLightState.materials.clear();
-  };
 
   // Preview a specific view to adjust camera distance
   const previewView = async (viewIndex = 0) => {
@@ -232,12 +114,6 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
       // Store original background
       const originalBackground = scene.background;
       
-      // Enhance lighting
-      enhanceLighting();
-      
-      // Set white background for better contrast
-      scene.background = new THREE.Color(0xffffff);
-      
       // Find the model
       const modelGroup = findModelGroup();
       
@@ -254,7 +130,6 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Render the scene
-        renderer.setClearColor(0xffffff, 1);
         renderer.render(scene, camera);
         
         // Capture the canvas
@@ -273,12 +148,6 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
       
       // Restore original background
       scene.background = originalBackground;
-      
-      // Reset renderer clear color
-      renderer.setClearColor(0x000000, 1);
-      
-      // Restore lighting to original state
-      restoreLighting();
       
       // If we were not in preview mode before, restore camera
       if (!wasInPreviewMode) {

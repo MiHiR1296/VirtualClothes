@@ -15,8 +15,8 @@ export const MODEL_PATHS = {
     category: "men",
     materialTypes: ['inside', 'outside', 'button', 'thread'],
     materialAssignments: {
-        'inside': ['inside', 'collar_l','placket_i'],
-        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_u'],
+        'inside': ['inside', 'collar_u','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_l'],
         'button': ['buttons'],
         'thread': ['button-stitches'],
     }
@@ -24,14 +24,14 @@ export const MODEL_PATHS = {
     'men_round_hs': {
         name: "Men's Round Neck Half Sleeve",
         directory: 'Models/Men_RoundNeck_T-shirt_HS',
-        materials: ['Fronttex.glb', 'Inside.glb', 'Outside.glb'],
+        materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Collar_L.glb', 'Collar_U.glb'],
         useOptimizedMaterials: true,
         hasAnimations: false,
         category: "men",
-        materialTypes: ['inside', 'outside', ],
+        materialTypes: ['inside', 'outside' ],
         materialAssignments: {
-            'inside': ['inside', '_inside_', 'collar', '_collar_'],
-            'outside': ['outside', '_outside_', 'zipper', '_zipper_'],
+            'inside': ['inside', 'collar_l','placket_i'],
+            'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_u'],
             
         
             
@@ -40,33 +40,32 @@ export const MODEL_PATHS = {
     'men_hoodie': {
         name: "Men's Hoodie",
         directory: 'Models/Men_Hoodie',
-        materials: ['Fronttex.glb', 'Inside.glb', 'Outside.glb', 'Zipper.glb', 'Metal.glb'],
+        materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb','Hood_L.glb','Hood_U.glb', 'Sleeve_L.glb','Pocket.glb', 'Sleeve_R.glb', 'Ribbed_Sleeve_L.glb', 'Ribbed_Sleeve_R.glb','Ribbed_End.glb', 'Zipper.glb', 'Metal.glb'],
         useOptimizedMaterials: true,
         hasAnimations: false,
         category: "men",
-        materialTypes: ['inside', 'outside', 'button', 'thread', 'metal'],
+        materialTypes: ['inside', 'outside', 'button', 'metal'],
         materialAssignments: {
-            'inside': ['inside', '_inside_', 'collar', '_collar_'],
-            'outside': ['outside', '_outside_', 'zipper', '_zipper_'],
+            'inside': ['inside', 'hood_l'],
+            'outside': [ 'zipper', 'front', 'back', 'hood_u', 'Pocket', 'ribbed_end', 'ribbed_sleeve_l', 'ribbed_sleeve_r', 'sleeve_r', 'sleeve_l'],
             'button': ['button', '_button_'],
             
             'metal': ['metal', '_metal_']
         }
     },
     'men_jacket': {
-        name: "Men's Jacket",
-        directory: 'Models/Men_Jacket',
-        materials: ['Fronttex.glb', 'Inside.glb', 'Outside.glb', 'Zipper.glb', 'Metal.glb', 'Threads.glb'],
-        useOptimizedMaterials: true,
-        hasAnimations: false,
-        category: "men",
-        materialTypes: ['inside', 'outside', 'metal'],
-        materialAssignments: {
-            'inside': ['inside', '_inside_', 'collar', '_collar_'],
-            'outside': ['outside', '_outside_', 'zipper', '_zipper_'],
-        
-            'metal': ['metal', '_metal_']
-        }
+    name: "Men's Jacket",
+    directory: 'Models/Men_Jacket',
+    materials: ['Back.glb', 'Collar_L.glb', 'Collar_U.glb', 'Front_L.glb', 'Front_R.glb', 'Fronttex.glb', 'Inside.glb', 'Metal.glb', 'Outside.glb', 'Ribbed_End.glb', 'Ribbed_Sleeve_L.glb', 'Ribbed_Sleeve_R.glb', 'Sleeve_R.glb', 'Sleeve_L.glb', 'Zipper.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside', 'metal'],
+    materialAssignments: {
+        'inside': ['inside', 'collar_l'],
+        'outside': ['outside', 'front_l', , 'collar_u','front_r', 'back', 'zipper', 'ribbed_end', 'ribbed_sleeve_l', 'ribbed_sleeve_r', 'sleeve_r', 'sleeve_l'],
+        'metal': ['metal']
+    }
     },
 
     // Women's Collection

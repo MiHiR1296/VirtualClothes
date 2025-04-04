@@ -21,6 +21,12 @@ export class EventHandler {
         window.selectedModelPart = null;
         window.findTextureObjects = this.findTextureObjects.bind(this);
         
+        // Add a new property to track multiple selected parts
+        this.selectedModelParts = [];
+        
+        // Initialize global variable for multi-selection
+        window.selectedModelParts = [];
+        
         // Flag to check if texture edit mode is active
         // this.isTextureEditModeActive = false;
 
@@ -47,7 +53,28 @@ export class EventHandler {
         
         if (colorPicker) {
             colorPicker.addEventListener('input', (event) => {
-                if (window.selectedModelPart) {
+                // Check if we have multiple selections
+                if (window.selectedModelParts && window.selectedModelParts.length > 1) {
+                    const hexColor = event.target.value;
+                    
+                    // Use the global color manager if available
+                    if (window.colorManager) {
+                        window.colorManager.storeExactColor(window.selectedModelParts, hexColor);
+                    } else {
+                        // Fallback to direct application for each part
+                        window.selectedModelParts.forEach(part => {
+                            if (part.material) {
+                                if (!part.userData) part.userData = {};
+                                part.userData.exactColor = hexColor;
+                                part.material.color.set(hexColor);
+                                part.material.needsUpdate = true;
+                            }
+                        });
+                    }
+                    
+                    console.log(`Applied color ${hexColor} to ${window.selectedModelParts.length} parts`);
+                }
+                else if (window.selectedModelPart) {
                     const hexColor = event.target.value;
                     
                     // Use the global color manager if available
@@ -78,84 +105,123 @@ export class EventHandler {
         this.setupModelMaterialControls();
     }
     
-setupModelMaterialControls() {
-    const updateMaterialUI = (object) => {
-        if (!object || !object.material) return;
-        
-        // Get the existing sliders from App.jsx
-        const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
-        const metalSlider = document.getElementById('modelPartMetalnessSlider');
-        const roughnessValue = document.getElementById('modelRoughnessValue');
-        const metalValue = document.getElementById('modelMetalnessValue');
-        
-        if (roughnessSlider && metalSlider && roughnessValue && metalValue) {
-            // Get stored exact values or use material values
-            const roughness = object.userData.exactRoughness !== undefined 
-                ? object.userData.exactRoughness 
-                : object.material.roughness;
+    setupModelMaterialControls() {
+        const updateMaterialUI = (object) => {
+            if (!object || !object.material) return;
                 
-            const metalness = object.userData.exactMetalness !== undefined
-                ? object.userData.exactMetalness
-                : object.material.metalness;
-            
-            // Update the UI
-            roughnessSlider.value = roughness;
-            metalSlider.value = metalness;
-            roughnessValue.textContent = roughness.toFixed(2);
-            metalValue.textContent = metalness.toFixed(2);
-            
-            console.log(`Updated material UI - Roughness: ${roughness}, Metalness: ${metalness}`);
+                // Get the existing sliders
+                const roughnessSlider = document.querySelector('input[type="range"][value="' + object.material.roughness + '"]');
+                const metalSlider = document.querySelector('input[type="range"][value="' + object.material.metalness + '"]');
+                const roughnessValue = document.getElementById('modelRoughnessValue');
+                const metalValue = document.getElementById('modelMetalnessValue');
+                
+                if (roughnessSlider && metalSlider && roughnessValue && metalValue) {
+                    // Get stored exact values or use material values
+                    const roughness = object.userData.exactRoughness !== undefined 
+                        ? object.userData.exactRoughness 
+                        : object.material.roughness;
+                        
+                    const metalness = object.userData.exactMetalness !== undefined
+                        ? object.userData.exactMetalness
+                        : object.material.metalness;
+                    
+                    // Update the UI
+                    roughnessSlider.value = roughness;
+                    metalSlider.value = metalness;
+                    roughnessValue.textContent = roughness.toFixed(2);
+                    metalValue.textContent = metalness.toFixed(2);
+                    
+                    console.log(`Updated material UI - Roughness: ${roughness}, Metalness: ${metalness}`);
+                }
+        };
+        
+        // Store the update function for later use
+        this.updateMaterialUI = updateMaterialUI;
+    }
+
+    // Also update the updateUIForSelection method to use our helper method
+    updateUIForSelection(object) {
+        this.updateModelNameDisplay(object.name);
+        this.updateMaterialControls(object);
+        
+        // Check if it's a texture mesh, and skip material property updates if so
+        if (this.isTextureMesh(object)) {
+            console.log("Skipping material UI update for texture mesh");
+            return;
         }
-    };
-    
-    // Store the update function for later use
-    this.updateMaterialUI = updateMaterialUI;
-}
-
-// Also update the updateUIForSelection method to use our helper method
-updateUIForSelection(object) {
-    this.updateModelNameDisplay(object.name);
-    
-    // Apply the exact color if we have a color manager
-    if (window.colorManager) {
-        window.colorManager.applyExactColor(object);
-    }
-    
-    this.updateMaterialControls(object);
-    
-    // Update material sliders using our helper method
-    if (this.updateMaterialUI) {
-        this.updateMaterialUI(object);
-    }
-    
-    // We can also still ensure the UI is updated directly
-    const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
-    const metalSlider = document.getElementById('modelPartMetalnessSlider');
-    const roughnessValue = document.getElementById('modelRoughnessValue');
-    const metalValue = document.getElementById('modelMetalnessValue');
-
-    if (roughnessSlider && metalSlider && roughnessValue && metalValue && object.material) {
-        // Get stored values or default to material values
-        const roughness = object.userData.exactRoughness !== undefined 
-            ? object.userData.exactRoughness 
-            : (object.material.roughness !== undefined ? object.material.roughness : 0.8);
-            
-        const metalness = object.userData.exactMetalness !== undefined
-            ? object.userData.exactMetalness
-            : (object.material.metalness !== undefined ? object.material.metalness : 0.1);
         
-        // Update UI
-        roughnessSlider.value = roughness;
-        metalSlider.value = metalness;
-        roughnessValue.textContent = roughness.toFixed(2);
-        metalValue.textContent = metalness.toFixed(2);
+        // Get the roughness and metalness values, preferring userData if available
+        let roughness = 0.8; // Default value
+        let metalness = 0.1; // Default value
         
-        console.log('Current material values:', {
-            roughness: roughness,
-            metalness: metalness
-        });
+        // Check if we have saved values in userData (these are most reliable)
+        if (object.userData) {
+            if (object.userData.exactRoughness !== undefined) {
+                roughness = object.userData.exactRoughness;
+            }
+            if (object.userData.exactMetalness !== undefined) {
+                metalness = object.userData.exactMetalness;
+            }
+        }
+        
+        // If we don't have userData values, try to get from material
+        if (object.material) {
+            if (roughness === 0.8 && object.material.roughness !== undefined) {
+                roughness = object.material.roughness;
+            }
+            if (metalness === 0.1 && object.material.metalness !== undefined) {
+                metalness = object.material.metalness;
+            }
+        }
+        
+        // Update global update function directly
+        if (window.updateSelectedModelMaterial) {
+            window.updateSelectedModelMaterial(roughness, metalness);
+        }
+        
+        // Dispatch an event so that other components know the selection has changed
+        window.dispatchEvent(new CustomEvent('model-part-selected', {
+            detail: {
+                count: 1,
+                parts: [object.name]
+            }
+        }));
     }
-}
+    
+    // Add a new method to update UI for multi-selection
+    updateUIForMultiSelection() {
+        if (!this.selectedModelParts || this.selectedModelParts.length === 0) {
+            this.updateModelNameDisplay('None');
+            return;
+        }
+        
+        if (this.selectedModelParts.length === 1) {
+            // Single object selected, use standard UI update
+            this.updateUIForSelection(this.selectedModelParts[0]);
+            return;
+        }
+        
+        // Multiple objects selected
+        const partNames = this.selectedModelParts.map(part => part.name);
+        const displayText = `Multiple parts (${this.selectedModelParts.length}): ${partNames.slice(0, 2).join(', ')}${partNames.length > 2 ? '...' : ''}`;
+        this.updateModelNameDisplay(displayText);
+        
+        // Get first selected object for color picker initialization
+        const primarySelection = window.selectedModelPart;
+        
+        // For color picker, we show the first selected item's color
+        if (primarySelection) {
+            this.updateMaterialControls(primarySelection);
+        }
+        
+        // Dispatch an event so that other components know the selection has changed
+        window.dispatchEvent(new CustomEvent('model-part-selected', {
+            detail: {
+                count: this.selectedModelParts.length,
+                parts: this.selectedModelParts.map(part => part.name)
+            }
+        }));
+    }
     
     isTextureMesh(object) {
         return object.name.includes("Fronttex") || object.name.includes("Backtex");
@@ -166,7 +232,17 @@ updateUIForSelection(object) {
         if (modelSelector) {
             modelSelector.addEventListener('change', async (event) => {
                 window.selectedModelPart = null;
+                this.selectedModelParts = [];
+                window.selectedModelParts = [];
                 this.updateModelNameDisplay('None');
+                
+                // Dispatch event with zero count when model changes
+                window.dispatchEvent(new CustomEvent('model-part-selected', {
+                    detail: {
+                        count: 0,
+                        parts: []
+                    }
+                }));
                 
                 this.loadingManager.show();
                 
@@ -256,8 +332,44 @@ updateUIForSelection(object) {
             );
 
             if (selectableIntersect) {
-                window.selectedModelPart = selectableIntersect.object;
-                this.updateUIForSelection(selectableIntersect.object);
+                const clickedObject = selectableIntersect.object;
+                
+                // Check if Ctrl or Cmd key is pressed
+                if (event.ctrlKey || event.metaKey) {
+                    // Multi-selection mode
+                    
+                    // Check if the object is already selected
+                    const existingIndex = this.selectedModelParts.findIndex(part => 
+                        part.uuid === clickedObject.uuid
+                    );
+                    
+                    if (existingIndex >= 0) {
+                        // Object is already selected, remove it (toggle)
+                        this.selectedModelParts.splice(existingIndex, 1);
+                    } else {
+                        // Add object to selection
+                        this.selectedModelParts.push(clickedObject);
+                    }
+                    
+                    // Always update primary selection for immediate UI feedback
+                    window.selectedModelPart = clickedObject;
+                    
+                    // Update global array reference
+                    window.selectedModelParts = this.selectedModelParts;
+                    
+                    // Update UI to show multiple selection
+                    this.updateUIForMultiSelection();
+                } else {
+                    // Single selection mode
+                    window.selectedModelPart = clickedObject;
+                    
+                    // Clear multi-selection array
+                    this.selectedModelParts = [clickedObject];
+                    window.selectedModelParts = this.selectedModelParts;
+                    
+                    // Update UI for single selection
+                    this.updateUIForSelection(clickedObject);
+                }
                 
                 // Update roughness and metalness sliders for model part
                 const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
@@ -266,12 +378,26 @@ updateUIForSelection(object) {
                 const metalValue = document.getElementById('modelMetalnessValue');
 
                 if (roughnessSlider && metalSlider && roughnessValue && metalValue) {
-                    const material = selectableIntersect.object.material;
+                    const material = clickedObject.material;
                     roughnessSlider.value = material.roughness;
                     metalSlider.value = material.metalness;
                     roughnessValue.textContent = material.roughness.toFixed(2);
                     metalValue.textContent = material.metalness.toFixed(2);
                 }
+            } else {
+                // No object selected, clear all selections
+                window.selectedModelPart = null;
+                this.selectedModelParts = [];
+                window.selectedModelParts = this.selectedModelParts;
+                this.updateModelNameDisplay('None');
+                
+                // Dispatch event with zero count
+                window.dispatchEvent(new CustomEvent('model-part-selected', {
+                    detail: {
+                        count: 0,
+                        parts: []
+                    }
+                }));
             }
         });
     }
@@ -280,7 +406,17 @@ updateUIForSelection(object) {
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 window.selectedModelPart = null;
+                this.selectedModelParts = [];
+                window.selectedModelParts = this.selectedModelParts;
                 this.updateModelNameDisplay('None');
+                
+                // Dispatch event with zero count when clearing selection with Escape
+                window.dispatchEvent(new CustomEvent('model-part-selected', {
+                    detail: {
+                        count: 0,
+                        parts: []
+                    }
+                }));
             }
         });
     }
@@ -305,30 +441,31 @@ updateUIForSelection(object) {
     }
 
     findTextureObjects() {
-    const textureObjects = [];
-    
-    // The new naming convention makes this much simpler
-    this.scene.traverse((object) => {
-        if (object.isMesh) {
-            // Check for the new naming convention
-            if (object.name.startsWith("Fronttex_")) {
-                textureObjects.push(object);
-                // Mark as texture mesh for easy identification later
-                object.userData.isTextureMesh = true;
-            }
-            // Also check traditional naming as a fallback
-            else if (object.name.includes("Fronttex") || object.name.includes("Backtex")) {
-                textureObjects.push(object);
-                object.userData.isTextureMesh = true;
-            }
-        }
-    });
-    
-    console.log(`Found ${textureObjects.length} texture objects:`, 
-        textureObjects.map(o => o.name));
+        const textureObjects = [];
         
-    return textureObjects;
-}
+        // The new naming convention makes this much simpler
+        this.scene.traverse((object) => {
+            if (object.isMesh) {
+                // Check for the new naming convention
+                if (object.name.startsWith("Fronttex_")) {
+                    textureObjects.push(object);
+                    // Mark as texture mesh for easy identification later
+                    object.userData.isTextureMesh = true;
+                }
+                // Also check traditional naming as a fallback
+                else if (object.name.includes("Fronttex") || object.name.includes("Backtex")) {
+                    textureObjects.push(object);
+                    object.userData.isTextureMesh = true;
+                }
+            }
+        });
+        
+        console.log(`Found ${textureObjects.length} texture objects:`, 
+            textureObjects.map(o => o.name));
+            
+        return textureObjects;
+    }
+
     applyStoredTextureToObjects(objects) {
         if (!this.loadedTexture) return;
 
@@ -352,7 +489,6 @@ updateUIForSelection(object) {
         });
     }
 
-        
     updateUIForSelection(object) {
         this.updateModelNameDisplay(object.name);
         
@@ -384,6 +520,14 @@ updateUIForSelection(object) {
                 metalness: material.metalness
             });
         }
+        
+        // Dispatch an event so that other components know the selection has changed
+        window.dispatchEvent(new CustomEvent('model-part-selected', {
+            detail: {
+                count: 1,
+                parts: [object.name]
+            }
+        }));
     }
 
     updateModelNameDisplay(name) {

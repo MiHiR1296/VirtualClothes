@@ -7,26 +7,26 @@ export const HDRI_OPTIONS = {
     studio: {
         name: "Studio",
         path: './Textures/lebombo_2k.exr',
-        defaultIntensity: 0.1,
+        defaultIntensity: 0.3,
         defaultRotation: 45,
         description: "Clean studio lighting setup"
     },
     warehouse: {
         name: "Warehouse",
         path: './Textures/warehouse_2k.exr',
-        defaultIntensity: 0.15,
+        defaultIntensity: 0.3,
         description: "Industrial warehouse lighting"
     },
     office: {
         name: "Office",
         path: './Textures/office_2k.exr',
-        defaultIntensity: 0.12,
+        defaultIntensity: 0.3,
         description: "Bright office environment"
     },
     outdoor: {
         name: "Outdoor",
         path: './Textures/outdoor_2k.exr',
-        defaultIntensity: 0.2,
+        defaultIntensity: 0.3,
         description: "Natural outdoor lighting"
     }
 };

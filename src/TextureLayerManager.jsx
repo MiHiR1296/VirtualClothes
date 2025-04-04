@@ -104,110 +104,110 @@ const MaterialProperties = ({ onChange, initialProperties }) => {
         onChange(property, newValue);
     };
 
-    return (
-        <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-            <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-300 
-                         hover:bg-gray-700 rounded-lg transition-colors mb-2"
-            >
-                <ChevronRight 
-                    className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
-                />
-                <Settings className="w-4 h-4" />
-                Material Properties
-            </button>
+    // return (
+    //     <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+    //         <button
+    //             onClick={() => setShowAdvanced(!showAdvanced)}
+    //             className="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-300 
+    //                      hover:bg-gray-700 rounded-lg transition-colors mb-2"
+    //         >
+    //             <ChevronRight 
+    //                 className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+    //             />
+    //             <Settings className="w-4 h-4" />
+    //             Material Properties
+    //         </button>
 
-            {showAdvanced && (
-                <div className="space-y-4 mt-2">
-                    {/* Roughness Slider */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-400">
-                            <span>Roughness</span>
-                            <span>{properties.roughness.toFixed(2)}</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={properties.roughness}
-                            onChange={(e) => handleChange('roughness', e.target.value)}
-                            className="w-full accent-blue-500"
-                        />
-                    </div>
+    //         {showAdvanced && (
+    //             <div className="space-y-4 mt-2">
+    //                 {/* Roughness Slider */}
+    //                 <div className="space-y-1">
+    //                     <div className="flex justify-between text-xs text-gray-400">
+    //                         <span>Roughness</span>
+    //                         <span>{properties.roughness.toFixed(2)}</span>
+    //                     </div>
+    //                     <input
+    //                         type="range"
+    //                         min="0"
+    //                         max="1"
+    //                         step="0.01"
+    //                         value={properties.roughness}
+    //                         onChange={(e) => handleChange('roughness', e.target.value)}
+    //                         className="w-full accent-blue-500"
+    //                     />
+    //                 </div>
 
-                    {/* Metalness Slider */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-400">
-                            <span>Metalness</span>
-                            <span>{properties.metalness.toFixed(2)}</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={properties.metalness}
-                            onChange={(e) => handleChange('metalness', e.target.value)}
-                            className="w-full accent-blue-500"
-                        />
-                    </div>
+    //                 {/* Metalness Slider */}
+    //                 <div className="space-y-1">
+    //                     <div className="flex justify-between text-xs text-gray-400">
+    //                         <span>Metalness</span>
+    //                         <span>{properties.metalness.toFixed(2)}</span>
+    //                     </div>
+    //                     <input
+    //                         type="range"
+    //                         min="0"
+    //                         max="1"
+    //                         step="0.01"
+    //                         value={properties.metalness}
+    //                         onChange={(e) => handleChange('metalness', e.target.value)}
+    //                         className="w-full accent-blue-500"
+    //                     />
+    //                 </div>
 
-                    {/* Clearcoat Slider */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-400">
-                            <span>Clearcoat</span>
-                            <span>{properties.clearcoat.toFixed(2)}</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={properties.clearcoat}
-                            onChange={(e) => handleChange('clearcoat', e.target.value)}
-                            className="w-full accent-blue-500"
-                        />
-                    </div>
+    //                 {/* Clearcoat Slider */}
+    //                 <div className="space-y-1">
+    //                     <div className="flex justify-between text-xs text-gray-400">
+    //                         <span>Clearcoat</span>
+    //                         <span>{properties.clearcoat.toFixed(2)}</span>
+    //                     </div>
+    //                     <input
+    //                         type="range"
+    //                         min="0"
+    //                         max="1"
+    //                         step="0.01"
+    //                         value={properties.clearcoat}
+    //                         onChange={(e) => handleChange('clearcoat', e.target.value)}
+    //                         className="w-full accent-blue-500"
+    //                     />
+    //                 </div>
 
-                    {/* Sheen Slider */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-400">
-                            <span>Sheen</span>
-                            <span>{properties.sheen.toFixed(2)}</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={properties.sheen}
-                            onChange={(e) => handleChange('sheen', e.target.value)}
-                            className="w-full accent-blue-500"
-                        />
-                    </div>
+    //                 {/* Sheen Slider */}
+    //                 <div className="space-y-1">
+    //                     <div className="flex justify-between text-xs text-gray-400">
+    //                         <span>Sheen</span>
+    //                         <span>{properties.sheen.toFixed(2)}</span>
+    //                     </div>
+    //                     <input
+    //                         type="range"
+    //                         min="0"
+    //                         max="1"
+    //                         step="0.01"
+    //                         value={properties.sheen}
+    //                         onChange={(e) => handleChange('sheen', e.target.value)}
+    //                         className="w-full accent-blue-500"
+    //                     />
+    //                 </div>
 
-                    {/* Sheen Roughness Slider */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-gray-400">
-                            <span>Sheen Roughness</span>
-                            <span>{properties.sheenRoughness.toFixed(2)}</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={properties.sheenRoughness}
-                            onChange={(e) => handleChange('sheenRoughness', e.target.value)}
-                            className="w-full accent-blue-500"
-                        />
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+    //                 {/* Sheen Roughness Slider */}
+    //                 <div className="space-y-1">
+    //                     <div className="flex justify-between text-xs text-gray-400">
+    //                         <span>Sheen Roughness</span>
+    //                         <span>{properties.sheenRoughness.toFixed(2)}</span>
+    //                     </div>
+    //                     <input
+    //                         type="range"
+    //                         min="0"
+    //                         max="1"
+    //                         step="0.01"
+    //                         value={properties.sheenRoughness}
+    //                         onChange={(e) => handleChange('sheenRoughness', e.target.value)}
+    //                         className="w-full accent-blue-500"
+    //                     />
+    //                 </div>
+    //             </div>
+    //         )}
+    //     </div>
+    // );
 };
 
 export default function TextureLayerManager() {
