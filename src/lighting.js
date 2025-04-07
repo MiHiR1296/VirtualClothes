@@ -173,9 +173,9 @@ export class LightingSystem {
         const gradient = context.createLinearGradient(0, 0, 0, 2);
         
         // Define gradient colors
-        gradient.addColorStop(0, '#1a1a1a');    // Dark gray at top
-        gradient.addColorStop(0.5, '#2a2a2a');  // Slightly lighter in middle
-        gradient.addColorStop(1, '#1a1a1a');    // Dark gray at bottom
+        gradient.addColorStop(0, '#0a0a0a');    // Almost black at top
+        gradient.addColorStop(0.5, '#121212');  // Very dark gray in middle
+        gradient.addColorStop(0.9, '#050505');    // Almost black at bottom
 
         context.fillStyle = gradient;
         context.fillRect(0, 0, 2, 2);

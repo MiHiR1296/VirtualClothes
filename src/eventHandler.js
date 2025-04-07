@@ -10,7 +10,7 @@ export class EventHandler {
         this.materialManager = materialManager;
         this.sceneManager = sceneManager;
         this.loadingManager = loadingManager;
-
+    
         // Initialize properties
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -27,9 +27,12 @@ export class EventHandler {
         // Initialize global variable for multi-selection
         window.selectedModelParts = [];
         
+        // Add this property for debouncing material updates
+        this.lastMaterialUpdateTime = 0;
+        
         // Flag to check if texture edit mode is active
-        // this.isTextureEditModeActive = false;
-
+        this.isTextureEditModeActive = false;
+    
         this.setupEventListeners();
     }
 
@@ -48,48 +51,34 @@ export class EventHandler {
     }
 
     setupWorkspaceControls() {
-        const colorPicker = document.getElementById('colorPicker');
+       
         const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+        const colorPicker = document.getElementById('colorPicker');
+
         
         if (colorPicker) {
+            // Use the input event with debouncing
+            let colorChangeTimeout = null;
+            
             colorPicker.addEventListener('input', (event) => {
-                // Check if we have multiple selections
-                if (window.selectedModelParts && window.selectedModelParts.length > 1) {
-                    const hexColor = event.target.value;
-                    
-                    // Use the global color manager if available
-                    if (window.colorManager) {
-                        window.colorManager.storeExactColor(window.selectedModelParts, hexColor);
-                    } else {
-                        // Fallback to direct application for each part
-                        window.selectedModelParts.forEach(part => {
-                            if (part.material) {
-                                if (!part.userData) part.userData = {};
-                                part.userData.exactColor = hexColor;
-                                part.material.color.set(hexColor);
-                                part.material.needsUpdate = true;
-                            }
-                        });
-                    }
-                    
-                    console.log(`Applied color ${hexColor} to ${window.selectedModelParts.length} parts`);
+                // Clear any pending timeout
+                if (colorChangeTimeout) {
+                    clearTimeout(colorChangeTimeout);
                 }
-                else if (window.selectedModelPart) {
-                    const hexColor = event.target.value;
+                
+                // Set a new timeout to apply color changes after user stops changing
+                colorChangeTimeout = setTimeout(() => {
+                    const exactColor = event.target.value;
                     
-                    // Use the global color manager if available
-                    if (window.colorManager) {
-                        window.colorManager.storeExactColor(window.selectedModelPart, hexColor);
-                    } else {
-                        // Fallback to direct application
-                        const material = window.selectedModelPart.material;
-                        window.selectedModelPart.userData.exactColor = hexColor;
-                        material.color.set(hexColor);
-                        material.needsUpdate = true;
+                    // Check if we have multiple selections
+                    if (window.selectedModelParts && window.selectedModelParts.length > 1) {
+                        // Apply to all selected parts
+                        window.colorManager.storeExactColor(window.selectedModelParts, exactColor);
+                    } else if (window.selectedModelPart) {
+                        // Apply to single selection
+                        window.colorManager.storeExactColor(window.selectedModelPart, exactColor);
                     }
-                    
-                    console.log(`Applied color ${hexColor} to ${window.selectedModelPart.name}`);
-                }
+                }, 100); // Apply after 100ms of inactivity
             });
         }
         
@@ -141,42 +130,31 @@ export class EventHandler {
 
     // Also update the updateUIForSelection method to use our helper method
     updateUIForSelection(object) {
+        // Don't update if object is null or undefined
+        if (!object) return;
+    
+        // Update the model name display
         this.updateModelNameDisplay(object.name);
-        this.updateMaterialControls(object);
         
-        // Check if it's a texture mesh, and skip material property updates if so
-        if (this.isTextureMesh(object)) {
-            console.log("Skipping material UI update for texture mesh");
-            return;
-        }
+        // Update material UI controls
+        this.updateMaterialControls(object, true);
         
-        // Get the roughness and metalness values, preferring userData if available
-        let roughness = 0.8; // Default value
-        let metalness = 0.1; // Default value
-        
-        // Check if we have saved values in userData (these are most reliable)
-        if (object.userData) {
-            if (object.userData.exactRoughness !== undefined) {
-                roughness = object.userData.exactRoughness;
+        // Only update sliders if this is not a texture mesh
+        if (!this.isTextureMesh(object)) {
+            // Update roughness and metalness sliders for model part
+            const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
+            const metalSlider = document.getElementById('modelPartMetalnessSlider');
+            const roughnessValue = document.getElementById('modelRoughnessValue');
+            const metalValue = document.getElementById('modelMetalnessValue');
+    
+            if (roughnessSlider && metalSlider && roughnessValue && metalValue && object.material) {
+                // Ensure we're reading the correct values from the material
+                const material = object.material;
+                roughnessSlider.value = material.roughness !== undefined ? material.roughness : 0.8;
+                metalSlider.value = material.metalness !== undefined ? material.metalness : 0.1;
+                roughnessValue.textContent = material.roughness !== undefined ? material.roughness.toFixed(2) : '0.80';
+                metalValue.textContent = material.metalness !== undefined ? material.metalness.toFixed(2) : '0.10';
             }
-            if (object.userData.exactMetalness !== undefined) {
-                metalness = object.userData.exactMetalness;
-            }
-        }
-        
-        // If we don't have userData values, try to get from material
-        if (object.material) {
-            if (roughness === 0.8 && object.material.roughness !== undefined) {
-                roughness = object.material.roughness;
-            }
-            if (metalness === 0.1 && object.material.metalness !== undefined) {
-                metalness = object.material.metalness;
-            }
-        }
-        
-        // Update global update function directly
-        if (window.updateSelectedModelMaterial) {
-            window.updateSelectedModelMaterial(roughness, metalness);
         }
         
         // Dispatch an event so that other components know the selection has changed
@@ -319,18 +297,18 @@ export class EventHandler {
             if (event.target.closest('.sidebar') || event.target.closest('.controls')) {
                 return;
             }
-
+    
             const rect = this.renderer.domElement.getBoundingClientRect();
             this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
+    
             this.raycaster.setFromCamera(this.mouse, this.camera);
             const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-
+    
             const selectableIntersect = intersects.find(intersect => 
                 this.isSelectableObject(intersect.object)
             );
-
+    
             if (selectableIntersect) {
                 const clickedObject = selectableIntersect.object;
                 
@@ -369,20 +347,6 @@ export class EventHandler {
                     
                     // Update UI for single selection
                     this.updateUIForSelection(clickedObject);
-                }
-                
-                // Update roughness and metalness sliders for model part
-                const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
-                const metalSlider = document.getElementById('modelPartMetalnessSlider');
-                const roughnessValue = document.getElementById('modelRoughnessValue');
-                const metalValue = document.getElementById('modelMetalnessValue');
-
-                if (roughnessSlider && metalSlider && roughnessValue && metalValue) {
-                    const material = clickedObject.material;
-                    roughnessSlider.value = material.roughness;
-                    metalSlider.value = material.metalness;
-                    roughnessValue.textContent = material.roughness.toFixed(2);
-                    metalValue.textContent = material.metalness.toFixed(2);
                 }
             } else {
                 // No object selected, clear all selections
@@ -490,35 +454,36 @@ export class EventHandler {
     }
 
     updateUIForSelection(object) {
+        // Don't update if object is null or undefined
+        if (!object) return;
+    
+        // Update the model name display
         this.updateModelNameDisplay(object.name);
         
-        // Apply the exact color if we have a color manager
+        // Apply the exact color if we have a color manager, but use debouncing
         if (window.colorManager) {
-            window.colorManager.applyExactColor(object);
+            window.colorManager.applyExactColor(object, true);
         }
         
-        this.updateMaterialControls(object);
-    
+        // Update material UI controls
+        this.updateMaterialControls(object, true);
         
-        // Update roughness and metalness sliders for model part
-        const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
-        const metalSlider = document.getElementById('modelPartMetalnessSlider');
-        const roughnessValue = document.getElementById('modelRoughnessValue');
-        const metalValue = document.getElementById('modelMetalnessValue');
-
-        if (roughnessSlider && metalSlider && roughnessValue && metalValue && object.material) {
-            // Ensure we're reading the correct values from the material
-            const material = object.material;
-            roughnessSlider.value = material.roughness !== undefined ? material.roughness : 0.8;
-            metalSlider.value = material.metalness !== undefined ? material.metalness : 0.1;
-            roughnessValue.textContent = material.roughness !== undefined ? material.roughness.toFixed(2) : '0.80';
-            metalValue.textContent = material.metalness !== undefined ? material.metalness.toFixed(2) : '0.10';
-            
-            // Log the current material values
-            console.log('Current material values:', {
-                roughness: material.roughness,
-                metalness: material.metalness
-            });
+        // Only update sliders if this is not a texture mesh
+        if (!this.isTextureMesh(object)) {
+            // Update roughness and metalness sliders for model part
+            const roughnessSlider = document.getElementById('modelPartRoughnessSlider');
+            const metalSlider = document.getElementById('modelPartMetalnessSlider');
+            const roughnessValue = document.getElementById('modelRoughnessValue');
+            const metalValue = document.getElementById('modelMetalnessValue');
+    
+            if (roughnessSlider && metalSlider && roughnessValue && metalValue && object.material) {
+                // Ensure we're reading the correct values from the material
+                const material = object.material;
+                roughnessSlider.value = material.roughness !== undefined ? material.roughness : 0.8;
+                metalSlider.value = material.metalness !== undefined ? material.metalness : 0.1;
+                roughnessValue.textContent = material.roughness !== undefined ? material.roughness.toFixed(2) : '0.80';
+                metalValue.textContent = material.metalness !== undefined ? material.metalness.toFixed(2) : '0.10';
+            }
         }
         
         // Dispatch an event so that other components know the selection has changed
@@ -529,6 +494,7 @@ export class EventHandler {
             }
         }));
     }
+    
 
     updateModelNameDisplay(name) {
         const modelNameDisplay = document.getElementById('modelNameDisplay');
@@ -548,22 +514,36 @@ export class EventHandler {
     }
 
    
-    updateMaterialControls(object) {
+    updateMaterialControls(object, useDebounce = true) {
         const colorPicker = document.getElementById('colorPicker');
         if (!colorPicker || !object.material) return;
         
+        // Track if we've already updated recently to avoid excessive updates
+        const now = Date.now();
+        
+        // If debouncing and we've updated recently, skip this update
+        if (useDebounce && now - this.lastMaterialUpdateTime < 200) {
+            return;
+        }
+        
+        // Update last update time
+        this.lastMaterialUpdateTime = now;
+        
         // Always use the color manager if available to get the exact color
         if (window.colorManager) {
-          const exactColor = window.colorManager.getExactColorForPicker(object);
-          colorPicker.value = exactColor;
-          console.log(`Set color picker to exact color: ${exactColor}`);
-          return;
+            const exactColor = window.colorManager.getExactColorForPicker(object);
+            colorPicker.value = exactColor;
+            
+            // Only log when debugging is enabled
+            if (window.DEBUG_COLOR_MANAGER) {
+                console.log(`Set color picker to exact color: ${exactColor}`);
+            }
+            return;
         }
         
         // Fallback to original logic if color manager is unavailable
         if (object.userData && object.userData.exactColor) {
             colorPicker.value = object.userData.exactColor;
-            console.log(`Retrieved stored color ${object.userData.exactColor} for ${object.name}`);
         }
         else if (object.material.color) {
             const hexColor = '#' + object.material.color.getHexString();
@@ -571,8 +551,6 @@ export class EventHandler {
             
             if (!object.userData) object.userData = {};
             object.userData.exactColor = hexColor;
-            
-            console.log(`Set initial color ${hexColor} for ${object.name}`);
         }
     }
 

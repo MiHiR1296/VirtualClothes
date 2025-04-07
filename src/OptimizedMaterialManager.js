@@ -12,7 +12,7 @@ export class OptimizedMaterialManager {
         this.materialSettings = {
             normalScale: 1.0,
             roughness: 1.0,
-            metalness: 0.0,
+            metalness: 0.1,
             envMapIntensity: 0.2
         };
         
@@ -26,7 +26,7 @@ export class OptimizedMaterialManager {
                 color: new THREE.Color(0xffffff),
                 roughness: 1.0,
                 metalness: 0.0,
-                sheen: 0.2,
+                sheen: 0.6,
                 sheenRoughness: 1.0,
                 transmission: 0.15,
                 side: THREE.FrontSide,
@@ -44,7 +44,7 @@ export class OptimizedMaterialManager {
                 color: new THREE.Color(0xffffff),
                 roughness: 1.0,
                 metalness: 0.1,
-                sheen: 0.3,
+                sheen: 0.6,
                 sheenRoughness: 1.0,
                 side: THREE.DoubleSide,
                 transparent: true,
@@ -86,7 +86,7 @@ export class OptimizedMaterialManager {
             metal: {
                 type: 'MeshStandardMaterial',
                 color: new THREE.Color(0x888888),
-                roughness: 0.2,
+                roughness: 0.02,
                 metalness: 1.0,
                 side: THREE.DoubleSide,
                 isSharedMaterial: true,

@@ -35,10 +35,25 @@ const CategorizedModelSelect = ({ selectedModel, onChange }) => {
   );
 };
 
+// colormanager
+// This goes in App.jsx - replace the entire window.colorManager object
 window.colorManager = {
-  // Apply the exact color from userData to a material
-  applyExactColor: function(object) {
+  // Track the last update time to implement a simple debounce
+  lastUpdateTime: 0,
+  updateDelay: 100, // ms between allowed updates
+  
+  // Apply the color to material, with optional debouncing
+  applyExactColor: function(object, debounce = true) {
     if (!object || !object.material) return false;
+    
+    // Skip if debouncing is enabled and we updated recently
+    if (debounce) {
+      const now = Date.now();
+      if (now - this.lastUpdateTime < this.updateDelay) {
+        return false;
+      }
+      this.lastUpdateTime = now;
+    }
     
     // If we have a stored exact color, use it
     if (object.userData && object.userData.exactColor) {
@@ -46,25 +61,39 @@ window.colorManager = {
       object.material.color.set(object.userData.exactColor);
       object.material.needsUpdate = true;
       
-      console.log(`Applied stored color ${object.userData.exactColor} to ${object.name}`);
+      // Log only when debug is enabled
+      if (window.DEBUG_COLOR_MANAGER) {
+        console.log(`Applied stored color ${object.userData.exactColor} to ${object.name}`);
+      }
       return true;
     }
     return false;
   },
   
-  // Store and apply a new color - now handles both single object and arrays
+  // Store and apply a new color - handles both single object and arrays
   storeExactColor: function(object, colorValue) {
+    // Debounce color updates
+    const now = Date.now();
+    if (now - this.lastUpdateTime < this.updateDelay) {
+      return false;
+    }
+    this.lastUpdateTime = now;
+    
     // Check if we're dealing with an array of objects (multi-selection)
     if (Array.isArray(object)) {
-      const results = [];
       // Apply to each object in the array
       object.forEach(obj => {
-        results.push(this.storeExactColor(obj, colorValue));
+        this._applyColorToSingleObject(obj, colorValue);
       });
-      return results.every(result => result === true);
+      return true;
     }
     
     // Handle single object
+    return this._applyColorToSingleObject(object, colorValue);
+  },
+
+  // Private method to apply color to a single object
+  _applyColorToSingleObject: function(object, colorValue) {
     if (!object || !object.material) return false;
     
     // Store the exact color
@@ -75,7 +104,10 @@ window.colorManager = {
     object.material.color.set(colorValue);
     object.material.needsUpdate = true;
     
-    console.log(`Stored and applied color ${colorValue} to ${object.name}`);
+    // Log only when debug is enabled
+    if (window.DEBUG_COLOR_MANAGER) {
+      console.log(`Stored and applied color ${colorValue} to ${object.name}`);
+    }
     return true;
   },
 
@@ -96,6 +128,9 @@ window.colorManager = {
     return "#ffffff";
   }
 };
+
+// Default debug mode to false
+window.DEBUG_COLOR_MANAGER = false;
 
 export default function App() {
   const canvasRef = useRef(null);

@@ -21,28 +21,28 @@ export class SceneManager {
     this.scene = new THREE.Scene();
 
     // Set up gradient background and subtle fog
-    const topColor = new THREE.Color(0x181818);
-    const midColor = new THREE.Color(0x242424);
-    const bottomColor = new THREE.Color(0x181818);
+    // const topColor = new THREE.Color(0x181818);
+    // const midColor = new THREE.Color(0x242424);
+    // const bottomColor = new THREE.Color(0x181818);
 
     const canvas = document.createElement('canvas');
     canvas.width = 2;
     canvas.height = 2;
 
     const context = canvas.getContext('2d');
-    const gradient = context.createLinearGradient(0, 0, 0, 8);
-    gradient.addColorStop(0, `#${topColor.getHexString()}`);
-    gradient.addColorStop(0.5, `#${midColor.getHexString()}`);
-    gradient.addColorStop(1, `#${bottomColor.getHexString()}`);
+    // const gradient = context.createLinearGradient(0, 0, 0, 8);
+    // gradient.addColorStop(0, `#${topColor.getHexString()}`);
+    // gradient.addColorStop(0.5, `#${midColor.getHexString()}`);
+    // gradient.addColorStop(1, `#${bottomColor.getHexString()}`);
 
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 2, 2);
+    // context.fillStyle = gradient;
+    // context.fillRect(0, 0, 2, 2);
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    this.scene.background = texture;
+    // const texture = new THREE.CanvasTexture(canvas);
+    // texture.needsUpdate = true;
+    // this.scene.background = texture;
 
-    this.scene.fog = new THREE.Fog(topColor, 60, 100);
+    // this.scene.fog = new THREE.Fog(topColor, 60, 100);
     
     // Add reference to this manager in scene's userData
     this.scene.userData.sceneManager = this;

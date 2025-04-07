@@ -70,34 +70,32 @@ export const MODEL_PATHS = {
 
     // Women's Collection
     'women_polo_hs': {
-        name: "Women's Polo Half Sleeve",
-        directory: 'Models/Women_Polo_shirt_HS',
-        materials: ['Fronttex.glb', 'Inside.glb', 'Outside.glb', 'Buttons.glb', 'Collar.glb', 'Threads.glb'],
-        useOptimizedMaterials: true,
-        hasAnimations: false,
-        category: "women",
-        materialTypes: ['inside', 'outside', 'button', 'thread'],
-        materialAssignments: {
-            'inside': ['inside', '_inside_', 'collar', '_collar_'],
-            'outside': ['outside', '_outside_', 'zipper', '_zipper_'],
-            'button': ['button', '_button_'],
-            'thread': ['thread', '_thread_'],
-        
-        }
+    name: "Women's Polo Half Sleeve",
+    directory: 'Models/Women_Polo_shirt_HS',
+    materials: ['Back.glb', 'Buttons.glb', 'Collar_L.glb', 'Collar_U.glb', 'Front.glb', 'Fronttex.glb', 'Inside.glb', 'Placket_L.glb', 'Placket_U.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Threads.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "women",
+    materialTypes: ['inside', 'outside', 'button', 'thread'],
+    materialAssignments: {
+        'inside': ['inside', 'collar_u'],
+        'outside': ['back', 'front', 'collar_l', 'placket_l', 'placket_u', 'sleeve_l', 'sleeve_r'],
+        'button': ['buttons'],
+        'thread': ['threads']
+    }
     },
     'women_round_hs': {
-        name: "Women's Round Neck Half Sleeve",
-        directory: 'Models/Women_RoundNeck_T-shirt_HS',
-        materials: ['Fronttex.glb', 'Inside.glb', 'Outside.glb', 'Collar.glb', 'Threads.glb'],
-        useOptimizedMaterials: true,
-        hasAnimations: false,
-        category: "women",
-        materialTypes: ['inside', 'outside' ],
-        materialAssignments: {
-            'inside': ['inside', '_inside_', 'collar', '_collar_'],
-            'outside': ['outside', '_outside_', 'zipper', '_zipper_'],
-          
-        }
+    name: "Women's Round Neck Half Sleeve",
+    directory: 'Models/Women_RoundNeck_T-shirt_HS',
+    materials: ['Back.glb', 'Collar_U.glb', 'Front.glb', 'Fronttex.glb', 'Inside.glb', 'Sleeve_L.glb', 'Sleeve_R.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "women",
+    materialTypes: ['inside', 'outside'],
+    materialAssignments: {
+        'inside': ['inside'],
+        'outside': ['back', 'collar_u', 'front', 'sleeve_l', 'sleeve_r']
+    }
     }
 };
 

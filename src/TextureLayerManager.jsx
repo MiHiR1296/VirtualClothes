@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Layers, Settings, ChevronRight, RefreshCw } from 'lucide-react';
+import { Plus, Layers, RefreshCw } from 'lucide-react';
 import LayerItem from './LayerItem';
 import { useTextureContext } from './TextureContext';
 import { TextureLoadingUtils } from './textureLoadingUtils';
 import { materialTypes } from './MaterialTypeSelect';
 import * as THREE from 'three';
 import { TextureCompositor } from './TextureCompositor';
-
 
 const DEFAULT_TRANSFORMATIONS = {
     offset: { x: 0, y: 0 },
@@ -70,146 +69,6 @@ const extractTextureMeshParts = () => {
     return textureMeshParts;
 };
 
-const MaterialProperties = ({ onChange, initialProperties }) => {
-    const [showAdvanced, setShowAdvanced] = useState(false);
-    const [properties, setProperties] = useState({
-        roughness: initialProperties?.roughness ?? 0.8,
-        metalness: initialProperties?.metalness ?? 0.1,
-        clearcoat: initialProperties?.clearcoat ?? 0.0,
-        clearcoatRoughness: initialProperties?.clearcoatRoughness ?? 0.0,
-        sheen: initialProperties?.sheen ?? 0.0,
-        sheenRoughness: initialProperties?.sheenRoughness ?? 0.8
-    });
-
-    // Update properties when initialProperties changes
-    useEffect(() => {
-        if (initialProperties) {
-            setProperties({
-                roughness: initialProperties.roughness ?? 0.8,
-                metalness: initialProperties.metalness ?? 0.1,
-                clearcoat: initialProperties.clearcoat ?? 0.0,
-                clearcoatRoughness: initialProperties.clearcoatRoughness ?? 0.0,
-                sheen: initialProperties.sheen ?? 0.0,
-                sheenRoughness: initialProperties.sheenRoughness ?? 0.8
-            });
-        }
-    }, [initialProperties]);
-
-    const handleChange = (property, value) => {
-        const newValue = parseFloat(value);
-        setProperties(prev => ({
-            ...prev,
-            [property]: newValue
-        }));
-        onChange(property, newValue);
-    };
-
-    // return (
-    //     <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-    //         <button
-    //             onClick={() => setShowAdvanced(!showAdvanced)}
-    //             className="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-300 
-    //                      hover:bg-gray-700 rounded-lg transition-colors mb-2"
-    //         >
-    //             <ChevronRight 
-    //                 className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
-    //             />
-    //             <Settings className="w-4 h-4" />
-    //             Material Properties
-    //         </button>
-
-    //         {showAdvanced && (
-    //             <div className="space-y-4 mt-2">
-    //                 {/* Roughness Slider */}
-    //                 <div className="space-y-1">
-    //                     <div className="flex justify-between text-xs text-gray-400">
-    //                         <span>Roughness</span>
-    //                         <span>{properties.roughness.toFixed(2)}</span>
-    //                     </div>
-    //                     <input
-    //                         type="range"
-    //                         min="0"
-    //                         max="1"
-    //                         step="0.01"
-    //                         value={properties.roughness}
-    //                         onChange={(e) => handleChange('roughness', e.target.value)}
-    //                         className="w-full accent-blue-500"
-    //                     />
-    //                 </div>
-
-    //                 {/* Metalness Slider */}
-    //                 <div className="space-y-1">
-    //                     <div className="flex justify-between text-xs text-gray-400">
-    //                         <span>Metalness</span>
-    //                         <span>{properties.metalness.toFixed(2)}</span>
-    //                     </div>
-    //                     <input
-    //                         type="range"
-    //                         min="0"
-    //                         max="1"
-    //                         step="0.01"
-    //                         value={properties.metalness}
-    //                         onChange={(e) => handleChange('metalness', e.target.value)}
-    //                         className="w-full accent-blue-500"
-    //                     />
-    //                 </div>
-
-    //                 {/* Clearcoat Slider */}
-    //                 <div className="space-y-1">
-    //                     <div className="flex justify-between text-xs text-gray-400">
-    //                         <span>Clearcoat</span>
-    //                         <span>{properties.clearcoat.toFixed(2)}</span>
-    //                     </div>
-    //                     <input
-    //                         type="range"
-    //                         min="0"
-    //                         max="1"
-    //                         step="0.01"
-    //                         value={properties.clearcoat}
-    //                         onChange={(e) => handleChange('clearcoat', e.target.value)}
-    //                         className="w-full accent-blue-500"
-    //                     />
-    //                 </div>
-
-    //                 {/* Sheen Slider */}
-    //                 <div className="space-y-1">
-    //                     <div className="flex justify-between text-xs text-gray-400">
-    //                         <span>Sheen</span>
-    //                         <span>{properties.sheen.toFixed(2)}</span>
-    //                     </div>
-    //                     <input
-    //                         type="range"
-    //                         min="0"
-    //                         max="1"
-    //                         step="0.01"
-    //                         value={properties.sheen}
-    //                         onChange={(e) => handleChange('sheen', e.target.value)}
-    //                         className="w-full accent-blue-500"
-    //                     />
-    //                 </div>
-
-    //                 {/* Sheen Roughness Slider */}
-    //                 <div className="space-y-1">
-    //                     <div className="flex justify-between text-xs text-gray-400">
-    //                         <span>Sheen Roughness</span>
-    //                         <span>{properties.sheenRoughness.toFixed(2)}</span>
-    //                     </div>
-    //                     <input
-    //                         type="range"
-    //                         min="0"
-    //                         max="1"
-    //                         step="0.01"
-    //                         value={properties.sheenRoughness}
-    //                         onChange={(e) => handleChange('sheenRoughness', e.target.value)}
-    //                         className="w-full accent-blue-500"
-    //                     />
-    //                 </div>
-    //             </div>
-    //         )}
-    //     </div>
-    // );
-};
-
 export default function TextureLayerManager() {
     const { 
         layers, 
@@ -221,7 +80,6 @@ export default function TextureLayerManager() {
     } = useTextureContext();
     
     const compositorRef = useRef(null);
-    const manipulatorRef = useRef(null);
 
     // State for texture mesh parts (ONLY parts from Fronttex meshes)
     const [textureMeshParts, setTextureMeshParts] = useState([]);
@@ -304,8 +162,6 @@ export default function TextureLayerManager() {
         }
     }, []);
 
-    
-
     // Update when refresh is triggered
     useEffect(() => {
         // This effect runs when refreshTrigger changes
@@ -336,7 +192,6 @@ export default function TextureLayerManager() {
     }, [layers]);
 
     // Trigger a texture refresh for selected parts
-   
     const refreshTextureForParts = () => {
         console.log('Performing full texture refresh');
         
@@ -418,25 +273,7 @@ export default function TextureLayerManager() {
             document.body.removeChild(notification);
           }
         }, 3000);
-      };
-    // Handler for material property changes
-    const handleMaterialPropertyChange = useCallback((property, value) => {
-        if (!activeLayer) return;
-        
-        // Use the updated method for material property changes
-        updateTransformation(activeLayer.id, {
-            materialProperties: { [property]: value }
-        });
-
-        // Apply to all texture objects
-        const objects = window.findTextureObjects?.() || [];
-        objects.forEach(object => {
-            if (object.name.startsWith("Fronttex_") && object.material) {
-                object.material[property] = value;
-                object.material.needsUpdate = true;
-            }
-        });
-    }, [activeLayer, updateTransformation]);
+    };
 
     // Handler for detail scale changes
     const handleDetailScaleChange = useCallback((layerId, newValue) => {
@@ -453,7 +290,6 @@ export default function TextureLayerManager() {
             setLayers(prev => prev.map(l => l.id === layerId ? updatedLayer : l));
         }
     }, [layers, setLayers]);
-    
 
     // Handler for file changes (texture uploads)
     const handleFileChange = useCallback(async (layerId, event) => {
@@ -478,76 +314,16 @@ export default function TextureLayerManager() {
                 return layer;
             }));
 
-            // Add this method inside the TextureLayerManager component
-            const refreshTextureForParts = useCallback(() => {
-                console.log('Performing full texture refresh');
-                
-                // Get all texture objects from the scene
-                const textureObjects = window.findTextureObjects?.() || [];
-                if (textureObjects.length === 0) {
-                  console.warn('No texture objects found');
-                  return;
-                }
-                
-                console.log(`Updating textures for ${textureObjects.length} objects`);
-                
-                // Get the compositor instance
-                const compositor = compositorRef.current;
-                if (!compositor) {
-                  console.warn('TextureCompositor instance not found');
-                  return;
-                }
-              
-                // Add helper function to window for other components to access all layers
-                window.getAllTextureLayersForUpdate = () => layers;
-                
-                // Update materials for all texture objects
-                const promises = textureObjects.map(object => 
-                  compositor.updateMaterial(object, layers)
-                );
-                
-                // Wait for all updates to complete
-                Promise.all(promises).then(() => {
-                  console.log('All textures refreshed successfully');
-                  
-                  // Force a re-render of layer manager
-                  setRefreshTrigger(prev => prev + 1);
-                  
-                  // Show a temporary notification
-                  const notification = document.createElement('div');
-                  notification.textContent = 'Textures Refreshed';
-                  notification.style.position = 'fixed';
-                  notification.style.top = '20px';
-                  notification.style.right = '20px';
-                  notification.style.backgroundColor = 'rgba(0,255,0,0.7)';
-                  notification.style.color = 'white';
-                  notification.style.padding = '10px';
-                  notification.style.borderRadius = '5px';
-                  notification.style.zIndex = '9999';
-                  document.body.appendChild(notification);
-                  
-                  // Remove notification after 3 seconds
-                  setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                      document.body.removeChild(notification);
-                    }
-                  }, 3000);
-                });
-              }, [layers, setRefreshTrigger]);
-
-
-
             // Force material update with a slight delay to ensure layer state is updated
             setTimeout(() => {
                 updateMaterials();
-                // Also refresh texture parts in case they depend on having a texture
-                refreshTextureForParts(layerId);
+                refreshTextureForParts();
             }, 50);
 
         } catch (error) {
             console.error('Error loading texture:', error);
         }
-    }, [setLayers, updateMaterials, refreshTextureForParts]);
+    }, [setLayers, updateMaterials]);
 
     // Handler for toggling layer visibility
     const toggleLayerVisibility = useCallback((id) => {
@@ -605,7 +381,7 @@ export default function TextureLayerManager() {
                     materialType: type,
                     transformations: {
                         ...layer.transformations,
-                        detailScale: materialPreset.defaultDetailScale || layer.transformations?.detailScale || 1.0
+                        detailScale: materialPreset.defaultDetailScale || layer.transformations.detailScale
                     },
                     materialProperties: {
                         ...layer.materialProperties,
@@ -639,22 +415,6 @@ export default function TextureLayerManager() {
         return newLayer;
     }, [contextAddLayer]);
 
-    // Add a debug function for checking available texture parts
-    const debugTextureParts = useCallback(() => {
-        const parts = extractTextureMeshParts();
-        console.log('Available texture parts:', parts);
-        return parts;
-    }, []);
-
-    // Expose the debug function globally for troubleshooting
-    useEffect(() => {
-        window.debugTextureParts = debugTextureParts;
-        
-        return () => {
-            delete window.debugTextureParts;
-        };
-    }, [debugTextureParts]);
-
     return (
         <div className="p-4 bg-gray-900 rounded-lg">
             {/* Header */}
@@ -662,12 +422,6 @@ export default function TextureLayerManager() {
                 <Layers className="w-5 h-5 text-blue-400" />
                 <h2 className="text-lg font-semibold text-white">Texture Layers</h2>
             </div>
-
-            {/* Global Material Properties */}
-            <MaterialProperties 
-                onChange={handleMaterialPropertyChange} 
-                initialProperties={activeLayer?.materialProperties}
-            />
 
             {/* Layer List */}
             <div className="space-y-2 my-4">
@@ -690,24 +444,15 @@ export default function TextureLayerManager() {
             </div>
 
             <div className="flex justify-between items-center mb-4">
-            <button
-                onClick={refreshTextureForParts}
-                className="px-2 py-1 bg-blue-600 text-white rounded-lg text-xs 
-                        hover:bg-blue-700 transition-colors flex items-center gap-1"
-            >
-                <RefreshCw className="w-3 h-3" />
-                Refresh Textures
-            </button>
-            
-            {/* <button
-                onClick={handleAddLayer}
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                        transition-colors flex items-center justify-center gap-2"
-            >
-                <Plus className="w-4 h-4" />
-                Add Layer
-            </button> */}
-        </div>
+                <button
+                    onClick={refreshTextureForParts}
+                    className="px-2 py-1 bg-blue-600 text-white rounded-lg text-xs 
+                            hover:bg-blue-700 transition-colors flex items-center gap-1"
+                >
+                    <RefreshCw className="w-3 h-3" />
+                    Refresh Textures
+                </button>
+            </div>
 
             {/* Debug Text to show available parts */}
             {textureMeshParts.length > 0 && (
@@ -716,8 +461,8 @@ export default function TextureLayerManager() {
                 </div>
             )}
 
-           {/* Add Layer Button */}
-           <button
+            {/* Add Layer Button */}
+            <button
                 onClick={handleAddLayer}
                 className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                          transition-colors flex items-center justify-center gap-2 mb-4"
@@ -725,8 +470,6 @@ export default function TextureLayerManager() {
                 <Plus className="w-4 h-4" />
                 Add Layer
             </button>
-            
-           
         </div>
     );
 }
