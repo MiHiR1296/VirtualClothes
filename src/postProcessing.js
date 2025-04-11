@@ -67,7 +67,7 @@ export class PostProcessing {
         
         // Very subtle brightness/contrast adjustment - using the nice values
         const brightnessContrastPass = new ShaderPass(BrightnessContrastShader);
-        brightnessContrastPass.uniforms.brightness.value = -0.01;    // Reset to neutral
+        brightnessContrastPass.uniforms.brightness.value = -0.02;    // Reset to neutral
         brightnessContrastPass.uniforms.contrast.value = 0.1;     // Very subtle contrast
         this.composer.addPass(brightnessContrastPass);
         

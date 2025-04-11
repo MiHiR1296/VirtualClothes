@@ -10,6 +10,38 @@ export class TextureCompositor {
         this.scene = null; // Will be set on first use
         this.originalMaterials = new Map(); // Store original materials by object name
         this.appliedLayersByObject = new Map(); // Track which layers are applied to which objects
+        this.loadNormalMapsForMaterialTypes();
+    }
+
+    async loadNormalMapsForMaterialTypes() {
+        const loader = new THREE.TextureLoader();
+        
+        for (const [materialType, path] of Object.entries(NORMAL_MAP_PATHS)) {
+            if (path) {
+                try {
+                    const normalMap = await new Promise((resolve, reject) => {
+                        loader.load(
+                            path, 
+                            texture => {
+                                texture.wrapS = THREE.RepeatWrapping;
+                                texture.wrapT = THREE.RepeatWrapping;
+                                texture.flipY = false;
+                                resolve(texture);
+                            },
+                            undefined,
+                            error => reject(error)
+                        );
+                    });
+                    
+                    // Convert the key to lowercase to match materialType values
+                    this.loadedNormalMaps.set(materialType.toLowerCase(), normalMap);
+                    console.log(`Loaded normal map for ${materialType}`);
+                    console.log('Available normal maps:', Array.from(this.loadedNormalMaps.keys()));
+                } catch (error) {
+                    console.error(`Failed to load normal map for ${materialType}:`, error);
+                }
+            }
+        }
     }
 
     async updateMaterial(object, layers) {
@@ -322,20 +354,56 @@ export class TextureCompositor {
                 newMaterial.envMapIntensity = baseProperties.envMapIntensity;
             }
     
-            // Apply material properties from the top visible layer
-            if (applicableLayers.length > 0) {
-                const topLayer = applicableLayers[0]; // First layer (topmost in rendering order)
-                const materialProps = materialTypes[topLayer.materialType || 'base'].properties;
-    
-                if (topLayer.materialProperties) {
-                    newMaterial.roughness = topLayer.materialProperties.roughness ?? materialProps.roughness;
-                    newMaterial.metalness = topLayer.materialProperties.metalness ?? materialProps.metalness;
-                    newMaterial.clearcoat = topLayer.materialProperties.clearcoat ?? (materialProps.clearcoat || 0);
-                    newMaterial.clearcoatRoughness = topLayer.materialProperties.clearcoatRoughness ?? (materialProps.clearcoatRoughness || 0);
-                    newMaterial.sheen = topLayer.materialProperties.sheen ?? (materialProps.sheen || 0);
-                    newMaterial.sheenRoughness = topLayer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
+           // Apply material properties from the top visible layer
+           if (applicableLayers.length > 0) {
+            const topLayer = applicableLayers[0]; // First layer (topmost in rendering order)
+            const materialTypeName = topLayer.materialType || 'base';
+            const materialProps = materialTypes[materialTypeName].properties;
+        
+            if (topLayer.materialProperties) {
+                newMaterial.roughness = topLayer.materialProperties.roughness ?? materialProps.roughness;
+                newMaterial.metalness = topLayer.materialProperties.metalness ?? materialProps.metalness;
+                newMaterial.clearcoat = topLayer.materialProperties.clearcoat ?? (materialProps.clearcoat || 0);
+                newMaterial.clearcoatRoughness = topLayer.materialProperties.clearcoatRoughness ?? (materialProps.clearcoatRoughness || 0);
+                newMaterial.sheen = topLayer.materialProperties.sheen ?? (materialProps.sheen || 0);
+                newMaterial.sheenRoughness = topLayer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
+            }
+            
+            // IMPROVED NORMAL MAP HANDLING
+            if (materialTypeName === 'base') {
+                // For base material type, preserve the original model's normal map if it exists
+                if (baseProperties.normalMap) {
+                    newMaterial.normalMap = baseProperties.normalMap;
+                    newMaterial.normalScale = baseProperties.normalScale.clone();
+                    console.log(`Preserved original base normal map for ${object.name}`);
+                } else {
+                    // If original didn't have normal map, check if we should load one
+                    const normalMap = this.loadedNormalMaps.get(materialTypeName);
+                    if (normalMap) {
+                        newMaterial.normalMap = normalMap;
+                        const normalIntensity = materialProps.normalScale || 1.0;
+                        newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+                        console.log(`Applied base normal map for ${object.name}`);
+                    }
+                }
+            } else {
+                // For other material types (like embroidery or print), use the type-specific normal map
+                const normalMap = this.loadedNormalMaps.get(materialTypeName);
+                if (normalMap) {
+                    newMaterial.normalMap = normalMap;
+                    const normalIntensity = materialProps.normalScale || 1.0;
+                    newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+                    console.log(`Applied ${materialTypeName} normal map for ${object.name}`);
+                } else {
+                    // Fallback to original normal map if no material-specific one exists
+                    if (baseProperties.normalMap) {
+                        newMaterial.normalMap = baseProperties.normalMap;
+                        newMaterial.normalScale = baseProperties.normalScale.clone();
+                        console.log(`Fallback to original normal map for ${object.name} (no ${materialTypeName} normal map)`);
+                    }
                 }
             }
+        }
     
             // Clean up old material if different
             if (object.material && object.material !== newMaterial) {
@@ -480,16 +548,28 @@ export class TextureCompositor {
             }
             
             // Apply material properties from layer settings
-            const materialProps = materialTypes[layer.materialType || 'base'].properties;
-            
-            if (layer.materialProperties) {
-                newMaterial.roughness = layer.materialProperties.roughness ?? materialProps.roughness;
-                newMaterial.metalness = layer.materialProperties.metalness ?? materialProps.metalness;
-                newMaterial.clearcoat = layer.materialProperties.clearcoat ?? (materialProps.clearcoat || 0);
-                newMaterial.clearcoatRoughness = layer.materialProperties.clearcoatRoughness ?? (materialProps.clearcoatRoughness || 0);
-                newMaterial.sheen = layer.materialProperties.sheen ?? (materialProps.sheen || 0);
-                newMaterial.sheenRoughness = layer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
-            }
+           // Apply material properties from layer settings
+                const materialTypeName = layer.materialType || 'base';
+                const materialProps = materialTypes[materialTypeName].properties;
+
+                if (layer.materialProperties) {
+                    newMaterial.roughness = layer.materialProperties.roughness ?? materialProps.roughness;
+                    newMaterial.metalness = layer.materialProperties.metalness ?? materialProps.metalness;
+                    newMaterial.clearcoat = layer.materialProperties.clearcoat ?? (materialProps.clearcoat || 0);
+                    newMaterial.clearcoatRoughness = layer.materialProperties.clearcoatRoughness ?? (materialProps.clearcoatRoughness || 0);
+                    newMaterial.sheen = layer.materialProperties.sheen ?? (materialProps.sheen || 0);
+                    newMaterial.sheenRoughness = layer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
+                }
+
+                // Apply normal map from material type if available
+                const normalMap = this.loadedNormalMaps.get(materialTypeName);
+                if (normalMap) {
+                    newMaterial.normalMap = normalMap;
+                    // Set appropriate normal scale
+                    const normalIntensity = materialProps.normalScale || 1.0;
+                    newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+                    console.log(`Applied normal map for material type ${materialTypeName} to repeating texture`);
+                }
             
             // Clean up old material if different
             if (object.material && object.material !== newMaterial) {
@@ -560,8 +640,27 @@ export class TextureCompositor {
     }
     
     // Clear all stored data - call this when changing models
-    reset() {
-        this.originalMaterials.clear();
+    reset(preserveOriginalMaterials = false) {
+        // Store a backup of original materials if requested
+        const originalMaterialsBackup = preserveOriginalMaterials ? 
+            new Map(this.originalMaterials) : null;
+        
+        // Clear tracking maps
         this.appliedLayersByObject.clear();
+        
+        // Clear or restore original materials
+        if (preserveOriginalMaterials && originalMaterialsBackup) {
+            // Just keep the original materials
+            console.log("Preserving original materials during reset");
+        } else {
+            // Complete reset
+            this.originalMaterials.clear();
+            console.log("Complete reset of texture compositor state");
+        }
+        
+        // Restore original materials if requested
+        if (preserveOriginalMaterials && originalMaterialsBackup) {
+            this.originalMaterials = originalMaterialsBackup;
+        }
     }
 }

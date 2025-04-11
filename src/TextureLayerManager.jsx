@@ -87,6 +87,16 @@ export default function TextureLayerManager() {
     // State to force re-render when layer selections change
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+    // Define updateMaterials EARLY in the component, before any useEffects that depend on it
+    const updateMaterials = useCallback(async () => {
+        const objects = window.findTextureObjects?.() || [];
+        if (!compositorRef.current) return;
+
+        for (const object of objects) {
+            await compositorRef.current.updateMaterial(object, layers);
+        }
+    }, [layers]);
+
     // Function to calculate available parts for a given layer
     const calculateAvailablePartsForLayer = useCallback((textureParts, layers, currentLayerId, compositor) => {
         // If compositor is available, get already assigned parts
@@ -168,28 +178,24 @@ export default function TextureLayerManager() {
         console.log('Refreshing layer manager with updated parts:', textureMeshParts);
     }, [refreshTrigger, textureMeshParts]);
 
-    // Update materials whenever layers change
+    // Update materials whenever layers change - Note: updateMaterials is now defined before this
     useEffect(() => {
-        updateMaterials();
+        // Prevent unnecessary material updates when just selecting a layer
+        const shouldUpdateMaterials = layers.some(layer => layer.texture || layer.materialType !== 'base');
         
-        // Force re-render to update available parts
+        if (shouldUpdateMaterials) {
+            console.log('Layers changed, updating materials');
+            updateMaterials();
+        }
+        
+        // Always force re-render to update available parts
         setRefreshTrigger(prev => prev + 1);
-    }, [layers]);
+    }, [layers, updateMaterials]);
 
     // Get available parts for a specific layer - ONLY texture mesh parts
     const getAvailablePartsForLayer = useCallback((layerId) => {
         return calculateAvailablePartsForLayer(textureMeshParts, layers, layerId, compositorRef.current);
     }, [textureMeshParts, layers, calculateAvailablePartsForLayer]);
-
-    // Update materials for all texture objects
-    const updateMaterials = useCallback(async () => {
-        const objects = window.findTextureObjects?.() || [];
-        if (!compositorRef.current) return;
-
-        for (const object of objects) {
-            await compositorRef.current.updateMaterial(object, layers);
-        }
-    }, [layers]);
 
     // Trigger a texture refresh for selected parts
     const refreshTextureForParts = () => {
@@ -299,25 +305,52 @@ export default function TextureLayerManager() {
             
             const texture = await TextureLoadingUtils.loadTexture(file);
 
-            setLayers(prev => prev.map(layer => {
-                if (layer.id === layerId) {
-                    const existingTransformations = layer.transformations || DEFAULT_TRANSFORMATIONS;
-                    const existingMaterialProps = layer.materialProperties || {};
-                    return {
-                        ...layer,
-                        texture,
-                        name: file.name,
-                        transformations: existingTransformations,
-                        materialProperties: existingMaterialProps
-                    };
-                }
-                return layer;
-            }));
+            // Flag to track if it's the first texture upload for this layer
+            let isFirstUpload = false;
+            
+            setLayers(prev => {
+                const updatedLayers = prev.map(layer => {
+                    if (layer.id === layerId) {
+                        // Check if this is the first texture upload for this layer
+                        isFirstUpload = !layer.texture;
+                        
+                        const existingTransformations = layer.transformations || DEFAULT_TRANSFORMATIONS;
+                        const existingMaterialProps = layer.materialProperties || {};
+                        return {
+                            ...layer,
+                            texture,
+                            name: file.name,
+                            transformations: existingTransformations,
+                            materialProperties: existingMaterialProps
+                        };
+                    }
+                    return layer;
+                });
+                return updatedLayers;
+            });
 
-            // Force material update with a slight delay to ensure layer state is updated
+            // Use a single update approach to prevent double refreshing
+            // and handle the case differently for first upload
             setTimeout(() => {
+                console.log(`Updating materials after texture upload (first upload: ${isFirstUpload})`);
                 updateMaterials();
-                refreshTextureForParts();
+                
+                // Only do a full refresh if absolutely necessary
+                if (isFirstUpload) {
+                    // For first uploads, we might need to reset visibility
+                    const texObjects = window.findTextureObjects?.() || [];
+                    texObjects.forEach(obj => {
+                        if (obj.material) {
+                            obj.material.opacity = 1.0;
+                            obj.material.transparent = true;
+                            obj.material.visible = true;
+                            obj.material.needsUpdate = true;
+                        }
+                    });
+                }
+                
+                // Force a re-render to update available parts
+                setRefreshTrigger(prev => prev + 1);
             }, 50);
 
         } catch (error) {
