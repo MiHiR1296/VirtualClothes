@@ -5,7 +5,7 @@ import { TextureProvider } from './TextureContext';
 import TextureLayerManager from './TextureLayerManager';
 import UVEditorContainer from './UVEditorContainer';
 import ControlsTooltip from './ControlsTooltip';
-import { getModelsByCategory } from './modelLoader';
+import { getModelsByCategory, MODEL_PATHS } from './modelLoader';
 import HDRIControls from './HDRIControls';
 import TechPack from './TechPack';
 import PantoneColorPicker from './PantoneColorPicker';
@@ -34,6 +34,12 @@ const CategorizedModelSelect = ({ selectedModel, onChange }) => {
     </select>
   );
 };
+
+// Helper to format fabric option names
+const formatFabricName = (name) =>
+  name
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 // colormanager
 // This goes in App.jsx - replace the entire window.colorManager object
@@ -142,6 +148,9 @@ export default function App() {
   const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.05);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPartsCount, setSelectedPartsCount] = useState(0);
+  const [fabricOptions, setFabricOptions] = useState(
+    Object.keys(MODEL_PATHS[selectedModel].fabricDirectories || { cotton: null })
+  );
 
   useEffect(() => {
     if (!canvasRef.current || appRef.current) return;
@@ -290,7 +299,12 @@ export default function App() {
       setIsLoading(true);
       const modelId = e.target.value;
       setSelectedModel(modelId);
-      
+      const fabrics = Object.keys(
+        MODEL_PATHS[modelId].fabricDirectories || { cotton: null }
+      );
+      setFabricOptions(fabrics);
+      setSelectedMaterial(fabrics[0]);
+
       await appRef.current.loadModel(modelId);
 
       // Apply preset material values after model loads
@@ -392,17 +406,17 @@ export default function App() {
               <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <Palette className="w-4 h-4" /> Materials
               </h2>
-              <select 
+              <select
                 id="materialSelect"
                 className="w-full bg-gray-700 rounded px-3 py-2 mb-3 border border-gray-600"
                 value={selectedMaterial}
                 onChange={handleMaterialChange}
               >
-                <option value="cotton">Cotton</option>
-                <option value="nylon">Nylon</option>
-                <option value="leather">Leather</option>
-                <option value="metal">Metal</option>
-                <option value="plastic">Plastic</option>
+                {fabricOptions.map((f) => (
+                  <option key={f} value={f}>
+                    {formatFabricName(f)}
+                  </option>
+                ))}
               </select>
             </div>
 
