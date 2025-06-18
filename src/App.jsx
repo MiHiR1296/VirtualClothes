@@ -332,7 +332,18 @@ export default function App() {
     const newMaterial = e.target.value;
     setSelectedMaterial(newMaterial);
     if (appRef.current?.materialManager) {
-      appRef.current.materialManager.updateMaterial(newMaterial);
+      if (window.selectedModelParts && window.selectedModelParts.length > 1) {
+        await Promise.all(
+          window.selectedModelParts.map((part) =>
+            appRef.current.materialManager.updateMaterial(part, newMaterial)
+          )
+        );
+      } else if (window.selectedModelPart) {
+        await appRef.current.materialManager.updateMaterial(
+          window.selectedModelPart,
+          newMaterial
+        );
+      }
     }
   };
 
