@@ -170,7 +170,7 @@ export class TextureCompositor {
             
             // Track which layers are applied to this object
             this.appliedLayersByObject.set(object.name, applicableLayers.map(l => l.id));
-    
+
             // If no applicable layers, restore the original material
             if (applicableLayers.length === 0) {
                 // Get the original material if available
@@ -200,6 +200,22 @@ export class TextureCompositor {
                         object.material.depthWrite = false;
                         object.material.needsUpdate = true;
                     }
+                }
+                return;
+            }
+
+            // If there are applicable layers but none have textures yet, simply
+            // restore the original material to avoid showing a white placeholder
+            const hasTextureLayer = applicableLayers.some(l => l.texture);
+            if (!hasTextureLayer) {
+                const originalMaterial = this.originalMaterials.get(object.name);
+                if (originalMaterial) {
+                    if (object.material && this.createdMaterials.has(object.material)) {
+                        object.material.dispose();
+                        this.createdMaterials.delete(object.material);
+                    }
+                    object.material = originalMaterial.clone();
+                    object.material.needsUpdate = true;
                 }
                 return;
             }
