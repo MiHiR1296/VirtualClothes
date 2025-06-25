@@ -67,10 +67,9 @@ export class OptimizedMaterialManager {
                 sheenRoughness: 1.0,
                 side: THREE.DoubleSide,
                 transparent: true,
-                // Thread textures use JPG files
                 texturePaths: {
-                    baseColor: 'Threads_basecolor.jpg',
-                    normal: 'Threads_normal.jpg'
+                    baseColor: 'Threads_basecolor',
+                    normal: 'Threads_normal'
                 },
                 isSharedMaterial: true,
                 sharedTexturePath: '/VirtualClothes/Textures/Threads/'
@@ -275,31 +274,7 @@ export class OptimizedMaterialManager {
     }
 
     async tryLoadTexture(fullPath, textureType, isSharedMaterial) {
-        // Attempt to load the texture using the provided path first
-        let texture = await textureCache.loadTexture(fullPath, textureType);
-
-        // If loading failed and no explicit extension is present, try common ones
-        if (!texture && !/\.[a-zA-Z]+$/.test(fullPath)) {
-            const extensions = ['png', 'jpg', 'jpeg', 'webp'];
-            for (const ext of extensions) {
-                const attemptPath = `${fullPath}.${ext}`;
-                texture = await textureCache.loadTexture(attemptPath, textureType);
-                if (texture) {
-                    break;
-                }
-            }
-        }
-
-        // Also try swapping between png/jpg if the path already has one extension
-        if (!texture && /\.png$/.test(fullPath)) {
-            const attemptPath = fullPath.replace(/\.png$/, '.jpg');
-            texture = await textureCache.loadTexture(attemptPath, textureType);
-        } else if (!texture && /\.jpg$/.test(fullPath)) {
-            const attemptPath = fullPath.replace(/\.jpg$/, '.png');
-            texture = await textureCache.loadTexture(attemptPath, textureType);
-        }
-
-        return texture;
+        return textureCache.loadTexture(fullPath, textureType);
     }
 
     async createMaterialWithTextures(type, textures, materialConfig) {
