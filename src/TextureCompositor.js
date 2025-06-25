@@ -1,6 +1,8 @@
 import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 import { materialTypes, NORMAL_MAP_PATHS } from './MaterialTypeSelect';
+import { textureCache } from './TextureCache';
+import { getTexturePath } from './paths.js';
 
 
 export class TextureCompositor {
@@ -12,6 +14,7 @@ export class TextureCompositor {
         this.originalMaterials = new Map(); // Store original materials by object name
         this.appliedLayersByObject = new Map(); // Track which layers are applied to which objects
         this.createdMaterials = new Set(); // Track materials created by updateMaterial
+        this.fallbackOutsideMaterial = null; // Cache for outside normal map
         this.loadNormalMapsForMaterialTypes();
     }
 
@@ -293,7 +296,7 @@ export class TextureCompositor {
             let envMapIntensity = 1.0;
             
             // Find the outside material to match properties
-            const outsideMaterial = this.findOutsideMaterial();
+            const outsideMaterial = await this.findOutsideMaterial();
             
             // Create texture directly with Three.js instead of using canvas for repeating patterns
             // This avoids seams in the 3D view when repeating patterns are used
@@ -689,9 +692,10 @@ export class TextureCompositor {
             logError('Error creating repeating texture material:', error);
         }
     }
-    findOutsideMaterial() {
+    async findOutsideMaterial() {
         let outsideMaterial = null;
         let outsideName = null;
+
         if (this.scene) {
             this.scene.traverse((object) => {
                 if (object.isMesh && object.name.toLowerCase().includes('outside')) {
@@ -720,12 +724,36 @@ export class TextureCompositor {
                 }
             });
         }
+
         if (outsideMaterial) {
             logDebug(`Found outside material on ${outsideName}`);
-        } else {
-            logDebug('No outside material found');
+            // Cache for later use
+            this.fallbackOutsideMaterial = {
+                normalMap: outsideMaterial.normalMap ? outsideMaterial.normalMap.clone() : null,
+                normalScale: outsideMaterial.normalScale ? outsideMaterial.normalScale.clone() : new THREE.Vector2(1, 1)
+            };
+            return outsideMaterial;
         }
-        return outsideMaterial;
+
+        logDebug('No outside material found');
+
+        // Attempt to load fallback normal map using current model directory
+        if (!this.fallbackOutsideMaterial && window.currentModelDirectory) {
+            const path = getTexturePath('outside_normal', window.currentModelDirectory);
+            logDebug('Trying fallback normal path:', path);
+            const texture = await textureCache.loadTexture(path, 'normal');
+            if (texture) {
+                this.fallbackOutsideMaterial = {
+                    normalMap: texture,
+                    normalScale: new THREE.Vector2(1, 1)
+                };
+                logDebug(`Loaded fallback outside normal from ${path}`);
+            } else {
+                logWarn(`Could not load fallback outside normal from ${path}`);
+            }
+        }
+
+        return this.fallbackOutsideMaterial;
     }
     
     // Get parts that are already assigned to visible layers
