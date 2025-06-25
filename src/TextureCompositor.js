@@ -46,14 +46,18 @@ export class TextureCompositor {
         };
 
         if (materialTypeName === 'base') {
-            if (baseProperties.normalMap) {
-                assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
-            } else if (fallbackNormalMap) {
-                const intensity = materialProps.normalScale || 1.0;
+            if (fallbackNormalMap) {
+                // Prefer the outside material's normal map when available
                 const scale =
                     fallbackNormalScale?.clone() ||
-                    new THREE.Vector2(intensity, intensity);
+                    baseProperties.normalScale?.clone() ||
+                    new THREE.Vector2(
+                        materialProps.normalScale || 1.0,
+                        materialProps.normalScale || 1.0
+                    );
                 assignNormalMap(fallbackNormalMap, scale);
+            } else if (baseProperties.normalMap) {
+                assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
             } else if (normalMap) {
                 const normalIntensity = materialProps.normalScale || 1.0;
                 assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
