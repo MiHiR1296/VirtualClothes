@@ -151,33 +151,16 @@ export class TextureCompositor {
             // Track which layers are applied to this object
             this.appliedLayersByObject.set(object.name, applicableLayers.map(l => l.id));
     
-            // If no applicable layers, restore the original material
+            // If no applicable layers, simply restore the original material
             if (applicableLayers.length === 0) {
-                // Get the original material if available
                 const originalMaterial = this.originalMaterials.get(object.name);
-                
                 if (originalMaterial) {
-                    // Clean up current material if it exists
                     if (object.material) {
                         object.material.dispose();
                     }
-                    
-                    // Clone the original material but make it transparent
-                    const invisibleMaterial = originalMaterial.clone();
-                    invisibleMaterial.transparent = true;
-                    invisibleMaterial.opacity = 0;
-                    invisibleMaterial.depthWrite = false;  // Don't write to depth buffer
-                    invisibleMaterial.needsUpdate = true;
-                    
-                    object.material = invisibleMaterial;
-                } else {
-                    // Create a completely transparent material if no original
-                    if (object.material) {
-                        object.material.transparent = true;
-                        object.material.opacity = 0;
-                        object.material.depthWrite = false;
-                        object.material.needsUpdate = true;
-                    }
+                    // Use a clone so the stored original remains untouched
+                    object.material = originalMaterial.clone();
+                    object.material.needsUpdate = true;
                 }
                 return;
             }
