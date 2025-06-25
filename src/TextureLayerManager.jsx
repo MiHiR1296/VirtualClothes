@@ -87,6 +87,108 @@ export default function TextureLayerManager() {
     // State to force re-render when layer selections change
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+    // Timeout ref for scheduled refreshes
+    const refreshTimeoutRef = useRef(null);
+
+    // Full texture refresh logic extracted for reuse
+    const refreshTextureForParts = useCallback(() => {
+        console.log('Performing full texture refresh');
+
+        // Get all texture objects from the scene
+        const textureObjects = window.findTextureObjects?.() || [];
+        if (textureObjects.length === 0) {
+          console.warn('No texture objects found');
+          return;
+        }
+
+        console.log(`Updating textures for ${textureObjects.length} objects with ${layers.length} layers`);
+
+        // First explicitly reset materials to ensure proper visibility
+        // THIS IS THE KEY STEP THAT MAKES IT WORK LIKE ADDING A NEW LAYER
+        textureObjects.forEach(obj => {
+          if (obj.material) {
+            // Reset critical material properties
+            obj.material.opacity = 1.0;
+            obj.material.transparent = true;
+            obj.material.alphaTest = 0.1;  // Ensure proper alpha testing
+            obj.material.needsUpdate = true;
+          }
+        });
+
+        // Get the compositor instance
+        const compositor = compositorRef.current;
+        if (!compositor) {
+          console.warn('TextureCompositor instance not found');
+          return;
+        }
+
+        // Complete reset of the compositor to clear any cached state
+        compositor.reset();
+
+        // Make a fresh copy of layers to ensure we're working with the most current state
+        const currentLayers = [...layers];
+        window.getAllTextureLayersForUpdate = () => currentLayers;
+
+        // For each texture object, force a complete material update
+        textureObjects.forEach(object => {
+          try {
+            // Restore the original material first to ensure we start clean
+            const originalMaterial = compositor.originalMaterials.get(object.name);
+            if (originalMaterial && object.material) {
+              // First dispose of the current material
+              object.material.dispose();
+
+              // Then create a fresh clone of the original
+              object.material = originalMaterial.clone();
+              object.material.needsUpdate = true;
+            }
+
+            // Now apply the texture layers to this clean material
+            compositor.updateMaterial(object, currentLayers);
+          } catch (error) {
+            console.error('Error updating material for object:', object.name, error);
+          }
+        });
+
+        // Force a re-render to update available parts
+        setRefreshTrigger(prev => prev + 1);
+
+        // Show a temporary notification
+        const notification = document.createElement('div');
+        notification.textContent = 'Textures Refreshed';
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.backgroundColor = 'rgba(0,255,0,0.7)';
+        notification.style.color = 'white';
+        notification.style.padding = '10px';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '9999';
+        document.body.appendChild(notification);
+
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 3000);
+    }, [layers]);
+
+    // Debounced refresh to mimic manual refresh key usage
+    const scheduleRefresh = useCallback(() => {
+        if (refreshTimeoutRef.current) {
+            clearTimeout(refreshTimeoutRef.current);
+        }
+        refreshTimeoutRef.current = setTimeout(() => {
+            refreshTextureForParts();
+        }, 100);
+    }, [refreshTextureForParts]);
+
+    // Clear any pending refresh on unmount
+    useEffect(() => {
+        return () => clearTimeout(refreshTimeoutRef.current);
+    }, []);
+
     // Define updateMaterials EARLY in the component, before any useEffects that depend on it
     const updateMaterials = useCallback(async () => {
         const objects = window.findTextureObjects?.() || [];
@@ -186,8 +288,9 @@ export default function TextureLayerManager() {
         if (shouldUpdateMaterials) {
             console.log('Layers changed, updating materials');
             updateMaterials();
+            scheduleRefresh();
         }
-        
+
         // Always force re-render to update available parts
         setRefreshTrigger(prev => prev + 1);
     }, [layers, updateMaterials]);
@@ -197,89 +300,6 @@ export default function TextureLayerManager() {
         return calculateAvailablePartsForLayer(textureMeshParts, layers, layerId, compositorRef.current);
     }, [textureMeshParts, layers, calculateAvailablePartsForLayer]);
 
-    // Trigger a texture refresh for selected parts
-    const refreshTextureForParts = () => {
-        console.log('Performing full texture refresh');
-        
-        // Get all texture objects from the scene
-        const textureObjects = window.findTextureObjects?.() || [];
-        if (textureObjects.length === 0) {
-          console.warn('No texture objects found');
-          return;
-        }
-        
-        console.log(`Updating textures for ${textureObjects.length} objects with ${layers.length} layers`);
-        
-        // First explicitly reset materials to ensure proper visibility
-        // THIS IS THE KEY STEP THAT MAKES IT WORK LIKE ADDING A NEW LAYER
-        textureObjects.forEach(obj => {
-          if (obj.material) {
-            // Reset critical material properties
-            obj.material.opacity = 1.0;
-            obj.material.transparent = true;
-            obj.material.alphaTest = 0.1;  // Ensure proper alpha testing
-            obj.material.needsUpdate = true;
-          }
-        });
-        
-        // Get the compositor instance
-        const compositor = compositorRef.current;
-        if (!compositor) {
-          console.warn('TextureCompositor instance not found');
-          return;
-        }
-      
-        // Complete reset of the compositor to clear any cached state
-        compositor.reset();
-        
-        // Make a fresh copy of layers to ensure we're working with the most current state
-        const currentLayers = [...layers];
-        window.getAllTextureLayersForUpdate = () => currentLayers;
-        
-        // For each texture object, force a complete material update
-        textureObjects.forEach(object => {
-          try {
-            // Restore the original material first to ensure we start clean
-            const originalMaterial = compositor.originalMaterials.get(object.name);
-            if (originalMaterial && object.material) {
-              // First dispose of the current material
-              object.material.dispose();
-              
-              // Then create a fresh clone of the original
-              object.material = originalMaterial.clone();
-              object.material.needsUpdate = true;
-            }
-            
-            // Now apply the texture layers to this clean material
-            compositor.updateMaterial(object, currentLayers);
-          } catch (error) {
-            console.error('Error updating material for object:', object.name, error);
-          }
-        });
-        
-        // Force a re-render to update available parts
-        setRefreshTrigger(prev => prev + 1);
-        
-        // Show a temporary notification
-        const notification = document.createElement('div');
-        notification.textContent = 'Textures Refreshed';
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.backgroundColor = 'rgba(0,255,0,0.7)';
-        notification.style.color = 'white';
-        notification.style.padding = '10px';
-        notification.style.borderRadius = '5px';
-        notification.style.zIndex = '9999';
-        document.body.appendChild(notification);
-        
-        // Remove notification after 3 seconds
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 3000);
-    };
 
     // Handler for detail scale changes
     const handleDetailScaleChange = useCallback((layerId, newValue) => {
@@ -334,6 +354,7 @@ export default function TextureLayerManager() {
             setTimeout(() => {
                 console.log(`Updating materials after texture upload (first upload: ${isFirstUpload})`);
                 updateMaterials();
+                scheduleRefresh();
                 
                 // Only do a full refresh if absolutely necessary
                 if (isFirstUpload) {
@@ -368,6 +389,7 @@ export default function TextureLayerManager() {
         setTimeout(() => {
             setRefreshTrigger(prev => prev + 1);
             updateMaterials();
+            scheduleRefresh();
         }, 50);
     }, [setLayers, updateMaterials]);
 
@@ -387,6 +409,7 @@ export default function TextureLayerManager() {
             setTimeout(() => {
                 setRefreshTrigger(prev => prev + 1);
                 updateMaterials();
+                scheduleRefresh();
             }, 50);
         }
     }, [layers, setLayers, updateMaterials]);
@@ -401,6 +424,7 @@ export default function TextureLayerManager() {
         setTimeout(() => {
             setRefreshTrigger(prev => prev + 1);
             updateMaterials();
+            scheduleRefresh();
         }, 50);
     }, [setLayers, updateMaterials]);
 
@@ -426,7 +450,10 @@ export default function TextureLayerManager() {
         }));
         
         // Update materials after material type changes
-        setTimeout(() => updateMaterials(), 50);
+        setTimeout(() => {
+            updateMaterials();
+            scheduleRefresh();
+        }, 50);
     }, [setLayers, updateMaterials]);
     
     // Custom function to handle adding a layer
@@ -443,7 +470,10 @@ export default function TextureLayerManager() {
         });
         
         // Force a refresh to update available parts
-        setTimeout(() => setRefreshTrigger(prev => prev + 1), 50);
+        setTimeout(() => {
+            setRefreshTrigger(prev => prev + 1);
+            scheduleRefresh();
+        }, 50);
         
         return newLayer;
     }, [contextAddLayer]);
