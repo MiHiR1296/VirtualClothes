@@ -121,8 +121,8 @@ export class TextureCompositor {
                     // First check if layer is visible
                     if (!layer.visible) return false;
                     
-                    // If layer has no texture, skip unless it's a base material type
-                    if (!layer.texture && layer.materialType !== 'base') return false;
+                    // Skip layers that don't have an assigned texture
+                    if (!layer.texture) return false;
                     
                     // If layer has no selected parts or empty array, apply to all parts
                     if (!layer.selectedParts || layer.selectedParts.length === 0) {
