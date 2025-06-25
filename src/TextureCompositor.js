@@ -36,14 +36,16 @@ export class TextureCompositor {
         const materialProps = materialTypes[materialTypeName].properties;
         const normalMap = this.loadedNormalMaps.get(materialTypeName);
 
-        const assignNormalMap = (map, scale) => {
+        const assignNormalMap = (map, scale, source) => {
             if (map) {
                 const cloned = map.clone();
                 cloned.colorSpace = THREE.NoColorSpace;
                 cloned.needsUpdate = true;
                 newMaterial.normalMap = cloned;
+                logDebug(`Applied normal map from ${source}`, { scale: scale.toArray() });
             } else {
                 newMaterial.normalMap = null;
+                logDebug("Cleared normal map", { source });
             }
             newMaterial.normalScale = scale.clone();
             newMaterial.needsUpdate = true;
@@ -59,18 +61,18 @@ export class TextureCompositor {
                         materialProps.normalScale || 1.0,
                         materialProps.normalScale || 1.0
                     );
-                assignNormalMap(fallbackNormalMap, scale);
+                assignNormalMap(fallbackNormalMap, scale, 'fallback');
             } else if (baseProperties.normalMap) {
-                assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
+                assignNormalMap(baseProperties.normalMap, baseProperties.normalScale, 'base');
             } else if (normalMap) {
                 const normalIntensity = materialProps.normalScale || 1.0;
-                assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
+                assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity), materialTypeName);
             }
         } else if (normalMap) {
             const normalIntensity = materialProps.normalScale || 1.0;
-            assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
+            assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity), materialTypeName);
         } else if (baseProperties.normalMap) {
-            assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
+            assignNormalMap(baseProperties.normalMap, baseProperties.normalScale, 'base');
         }
     }
 
