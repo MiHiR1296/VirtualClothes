@@ -7,6 +7,10 @@ import { materialTypes } from './MaterialTypeSelect';
 import * as THREE from 'three';
 import { TextureCompositor } from './TextureCompositor';
 
+// Delay used for debounced texture refreshes (in milliseconds).
+// Increase this value if heavy textures are causing early refreshes.
+export const REFRESH_DELAY_MS = 200;
+
 const DEFAULT_TRANSFORMATIONS = {
     offset: { x: 0, y: 0 },
     scale: 1,
@@ -153,16 +157,21 @@ export default function TextureLayerManager() {
         // Force a re-render to update available parts
         setRefreshTrigger(prev => prev + 1);
 
-        // Show a temporary notification
+        // Show a subtle icon to indicate textures were refreshed
         const notification = document.createElement('div');
-        notification.textContent = 'Textures Refreshed';
+        notification.innerHTML = '&#x2714;';
         notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
-        notification.style.backgroundColor = 'rgba(0,255,0,0.7)';
+        notification.style.left = '12px';
+        notification.style.bottom = '12px';
+        notification.style.backgroundColor = 'rgba(0,0,0,0.6)';
         notification.style.color = 'white';
-        notification.style.padding = '10px';
-        notification.style.borderRadius = '5px';
+        notification.style.width = '22px';
+        notification.style.height = '22px';
+        notification.style.borderRadius = '50%';
+        notification.style.fontSize = '12px';
+        notification.style.display = 'flex';
+        notification.style.alignItems = 'center';
+        notification.style.justifyContent = 'center';
         notification.style.zIndex = '9999';
         document.body.appendChild(notification);
 
@@ -174,14 +183,15 @@ export default function TextureLayerManager() {
         }, 3000);
     }, [layers]);
 
-    // Debounced refresh to mimic manual refresh key usage
+    // Debounced refresh to mimic manual refresh key usage.
+    // The delay can be tweaked by changing REFRESH_DELAY_MS above.
     const scheduleRefresh = useCallback(() => {
         if (refreshTimeoutRef.current) {
             clearTimeout(refreshTimeoutRef.current);
         }
         refreshTimeoutRef.current = setTimeout(() => {
             refreshTextureForParts();
-        }, 100);
+        }, REFRESH_DELAY_MS);
     }, [refreshTextureForParts]);
 
     // Clear any pending refresh on unmount
