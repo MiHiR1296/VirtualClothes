@@ -18,8 +18,13 @@ export class TextureCompositor {
      * Apply the appropriate normal map to a material based on the selected
      * material type. This helper is used for both repeating and non-repeating
      * textures so the same logic runs regardless of layer configuration.
+     *
+     * @param {THREE.Material} newMaterial - Material to modify
+     * @param {string} materialTypeName - Selected material type
+     * @param {object} baseProperties - Properties of the original material
+     * @param {THREE.Texture} [fallbackNormalMap] - Optional fallback map, typically from the outside material
      */
-    applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties) {
+    applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties, fallbackNormalMap = null) {
         const materialProps = materialTypes[materialTypeName].properties;
         const normalMap = this.loadedNormalMaps.get(materialTypeName);
 
@@ -36,6 +41,9 @@ export class TextureCompositor {
         if (materialTypeName === 'base') {
             if (baseProperties.normalMap) {
                 assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
+            } else if (fallbackNormalMap) {
+                const intensity = materialProps.normalScale || 1.0;
+                assignNormalMap(fallbackNormalMap, new THREE.Vector2(intensity, intensity));
             } else if (normalMap) {
                 const normalIntensity = materialProps.normalScale || 1.0;
                 assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
@@ -444,7 +452,12 @@ export class TextureCompositor {
             }
             
             // Apply the appropriate normal map
-            this.applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties);
+            this.applyNormalMapToMaterial(
+                newMaterial,
+                materialTypeName,
+                baseProperties,
+                outsideMaterial?.normalMap || null
+            );
         }
     
             // Clean up old material if different and managed by this compositor
@@ -611,7 +624,12 @@ export class TextureCompositor {
                 }
 
                 // Apply the appropriate normal map
-                this.applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties);
+                this.applyNormalMapToMaterial(
+                    newMaterial,
+                    materialTypeName,
+                    baseProperties,
+                    outsideMaterial?.normalMap || null
+                );
             
         // Clean up old material if different and managed by this compositor
         if (
