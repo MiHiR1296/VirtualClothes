@@ -25,13 +25,15 @@ export class TextureCompositor {
      * @param {object} baseProperties - Properties of the original material
      * @param {THREE.Texture} [fallbackNormalMap] - Optional fallback map, typically from the outside material
      * @param {THREE.Vector2} [fallbackNormalScale] - Scale to use with the fallback normal map
+     * @param {string} [objectName] - Name of the mesh being modified (for logging)
      */
     applyNormalMapToMaterial(
         newMaterial,
         materialTypeName,
         baseProperties,
         fallbackNormalMap = null,
-        fallbackNormalScale = null
+        fallbackNormalScale = null,
+        objectName = ''
     ) {
         const materialProps = materialTypes[materialTypeName].properties;
         const normalMap = this.loadedNormalMaps.get(materialTypeName);
@@ -43,11 +45,12 @@ export class TextureCompositor {
                 cloned.needsUpdate = true;
                 newMaterial.normalMap = cloned;
                 logInfo(`Applied normal map from ${source}`, {
+                    object: objectName,
                     scale: scale.toArray(),
                 });
             } else {
                 newMaterial.normalMap = null;
-                logInfo("Cleared normal map", { source });
+                logInfo("Cleared normal map", { source, object: objectName });
             }
             newMaterial.normalScale = scale.clone();
             newMaterial.needsUpdate = true;
@@ -479,7 +482,8 @@ export class TextureCompositor {
                 materialTypeName,
                 baseProperties,
                 outsideMaterial?.normalMap || null,
-                outsideMaterial?.normalScale || null
+                outsideMaterial?.normalScale || null,
+                object.name
             );
         }
     
@@ -652,7 +656,8 @@ export class TextureCompositor {
                     materialTypeName,
                     baseProperties,
                     outsideMaterial?.normalMap || null,
-                    outsideMaterial?.normalScale || null
+                    outsideMaterial?.normalScale || null,
+                    object.name
                 );
             
         // Clean up old material if different and managed by this compositor
@@ -686,13 +691,39 @@ export class TextureCompositor {
     }
     findOutsideMaterial() {
         let outsideMaterial = null;
+        let outsideName = null;
         if (this.scene) {
             this.scene.traverse((object) => {
                 if (object.isMesh && object.name.toLowerCase().includes('outside')) {
+                    if (!this.originalMaterials.has(object.name) && object.material) {
+                        const original = object.material.clone();
+                        const textureProps = [
+                            'map',
+                            'normalMap',
+                            'roughnessMap',
+                            'metalnessMap',
+                            'aoMap',
+                            'emissiveMap',
+                            'alphaMap',
+                            'bumpMap'
+                        ];
+                        textureProps.forEach(prop => {
+                            if (object.material[prop]) {
+                                original[prop] = object.material[prop].clone();
+                            }
+                        });
+                        this.originalMaterials.set(object.name, original);
+                    }
                     const original = this.originalMaterials.get(object.name);
                     outsideMaterial = original || object.material || outsideMaterial;
+                    outsideName = object.name;
                 }
             });
+        }
+        if (outsideMaterial) {
+            logDebug(`Found outside material on ${outsideName}`);
+        } else {
+            logDebug('No outside material found');
         }
         return outsideMaterial;
     }
