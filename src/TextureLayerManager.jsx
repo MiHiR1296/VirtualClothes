@@ -359,30 +359,21 @@ export default function TextureLayerManager() {
                 return updatedLayers;
             });
 
-            // Use a single update approach to prevent double refreshing
-            // and handle the case differently for first upload
-            setTimeout(() => {
-                console.log(`Updating materials after texture upload (first upload: ${isFirstUpload})`);
-                updateMaterials();
-                scheduleRefresh();
-                
-                // Only do a full refresh if absolutely necessary
-                if (isFirstUpload) {
-                    // For first uploads, we might need to reset visibility
-                    const texObjects = window.findTextureObjects?.() || [];
-                    texObjects.forEach(obj => {
-                        if (obj.material) {
-                            obj.material.opacity = 1.0;
-                            obj.material.transparent = true;
-                            obj.material.visible = true;
-                            obj.material.needsUpdate = true;
-                        }
-                    });
-                }
-                
-                // Force a re-render to update available parts
-                setRefreshTrigger(prev => prev + 1);
-            }, 50);
+            // Handle first uploads by ensuring texture objects are visible
+            if (isFirstUpload) {
+                const texObjects = window.findTextureObjects?.() || [];
+                texObjects.forEach(obj => {
+                    if (obj.material) {
+                        obj.material.opacity = 1.0;
+                        obj.material.transparent = true;
+                        obj.material.visible = true;
+                        obj.material.needsUpdate = true;
+                    }
+                });
+            }
+
+            // Trigger a re-render so useEffect runs with the latest layers
+            setRefreshTrigger(prev => prev + 1);
 
         } catch (error) {
             console.error('Error loading texture:', error);
@@ -395,12 +386,8 @@ export default function TextureLayerManager() {
             layer.id === id ? { ...layer, visible: !layer.visible } : layer
         ));
         
-        // Force a refresh to update available parts and materials
-        setTimeout(() => {
-            setRefreshTrigger(prev => prev + 1);
-            updateMaterials();
-            scheduleRefresh();
-        }, 50);
+        // Simply trigger a re-render; material update will occur via useEffect
+        setRefreshTrigger(prev => prev + 1);
     }, [setLayers, updateMaterials]);
 
     // Handler for moving layers up/down
@@ -415,12 +402,8 @@ export default function TextureLayerManager() {
             [newLayers[index], newLayers[newIndex]] = [newLayers[newIndex], newLayers[index]];
             setLayers(newLayers);
             
-            // Force a refresh after layer order changes
-            setTimeout(() => {
-                setRefreshTrigger(prev => prev + 1);
-                updateMaterials();
-                scheduleRefresh();
-            }, 50);
+            // Force a re-render so the effect updates materials
+            setRefreshTrigger(prev => prev + 1);
         }
     }, [layers, setLayers, updateMaterials]);
 
@@ -430,12 +413,8 @@ export default function TextureLayerManager() {
             return prev.filter(layer => layer.id !== id);
         });
         
-        // Force a refresh to update available parts
-        setTimeout(() => {
-            setRefreshTrigger(prev => prev + 1);
-            updateMaterials();
-            scheduleRefresh();
-        }, 50);
+        // Trigger a re-render so the effect handles cleanup
+        setRefreshTrigger(prev => prev + 1);
     }, [setLayers, updateMaterials]);
 
     // Handler for changing material type
@@ -459,11 +438,8 @@ export default function TextureLayerManager() {
             return layer;
         }));
         
-        // Update materials after material type changes
-        setTimeout(() => {
-            updateMaterials();
-            scheduleRefresh();
-        }, 50);
+        // Trigger a re-render; material update will follow via useEffect
+        setRefreshTrigger(prev => prev + 1);
     }, [setLayers, updateMaterials]);
     
     // Custom function to handle adding a layer
@@ -479,12 +455,9 @@ export default function TextureLayerManager() {
             }
         });
         
-        // Force a refresh to update available parts
-        setTimeout(() => {
-            setRefreshTrigger(prev => prev + 1);
-            scheduleRefresh();
-        }, 50);
-        
+        // Trigger re-render so hooks update
+        setRefreshTrigger(prev => prev + 1);
+
         return newLayer;
     }, [contextAddLayer]);
 
