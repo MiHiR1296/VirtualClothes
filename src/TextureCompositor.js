@@ -36,10 +36,13 @@ export class TextureCompositor {
         const normalMap = this.loadedNormalMaps.get(materialTypeName);
 
         const assignNormalMap = (map, scale) => {
-            newMaterial.normalMap = map;
-            if (newMaterial.normalMap) {
-                newMaterial.normalMap.colorSpace = THREE.NoColorSpace;
-                newMaterial.normalMap.needsUpdate = true;
+            if (map) {
+                const cloned = map.clone();
+                cloned.colorSpace = THREE.NoColorSpace;
+                cloned.needsUpdate = true;
+                newMaterial.normalMap = cloned;
+            } else {
+                newMaterial.normalMap = null;
             }
             newMaterial.normalScale = scale.clone();
             newMaterial.needsUpdate = true;
@@ -414,13 +417,13 @@ export class TextureCompositor {
     
             // Start with the original material properties if available
             const originalMaterial = this.originalMaterials.get(object.name);
-            const baseProperties = originalMaterial 
+            const baseProperties = originalMaterial
                 ? {
                     color: originalMaterial.color,
                     roughness: originalMaterial.roughness,
                     metalness: originalMaterial.metalness,
                     envMapIntensity: originalMaterial.envMapIntensity,
-                    normalMap: originalMaterial.normalMap,
+                    normalMap: originalMaterial.normalMap ? originalMaterial.normalMap.clone() : null,
                     normalScale: originalMaterial.normalScale?.clone() || new THREE.Vector2(1, 1)
                 }
                 : {
@@ -585,13 +588,13 @@ export class TextureCompositor {
             
             // Start with the original material properties
             const originalMaterial = this.originalMaterials.get(object.name);
-            const baseProperties = originalMaterial 
+            const baseProperties = originalMaterial
                 ? {
                     color: originalMaterial.color,
                     roughness: originalMaterial.roughness,
                     metalness: originalMaterial.metalness,
                     envMapIntensity: originalMaterial.envMapIntensity,
-                    normalMap: originalMaterial.normalMap,
+                    normalMap: originalMaterial.normalMap ? originalMaterial.normalMap.clone() : null,
                     normalScale: originalMaterial.normalScale?.clone() || new THREE.Vector2(1, 1)
                 }
                 : {
