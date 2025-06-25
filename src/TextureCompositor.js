@@ -15,7 +15,50 @@ export class TextureCompositor {
         this.createdMaterials = new Set(); // Track materials created by updateMaterial
         this.cachedOutsideMaterial = null; // Fallback outside material if no mesh exists
         this.baseNormalMap = null; // Normal map loaded from the current model directory
+        this._baseNormalPromise = null; // In-flight load promise for the base normal map
         this.loadNormalMapsForMaterialTypes();
+    }
+
+    /**
+     * Load the base normal map for the currently loaded model. The texture is
+     * cached so it only loads once per model. Returns a promise that resolves
+     * to the loaded texture or null on failure.
+     */
+    async loadBaseNormalMap() {
+        if (this.baseNormalMap && this.baseNormalMap.image) {
+            return this.baseNormalMap;
+        }
+
+        if (this._baseNormalPromise) {
+            return this._baseNormalPromise;
+        }
+
+        if (!window.currentModelDirectory) {
+            return null;
+        }
+
+        const path = getTexturePath('outside_normal.png', window.currentModelDirectory);
+        const loader = new THREE.TextureLoader();
+
+        this._baseNormalPromise = loader
+            .loadAsync(path)
+            .then((texture) => {
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                texture.flipY = false;
+                texture.colorSpace = THREE.NoColorSpace;
+                this.baseNormalMap = texture;
+                this._baseNormalPromise = null;
+                logDebug(`Loaded base normal map from ${path}`);
+                return texture;
+            })
+            .catch(() => {
+                logWarn(`Could not load base normal map from ${path}`);
+                this._baseNormalPromise = null;
+                return null;
+            });
+
+        return this._baseNormalPromise;
     }
 
     /**
@@ -70,19 +113,19 @@ export class TextureCompositor {
             } else if (normalMap) {
                 const normalIntensity = materialProps.normalScale || 1.0;
                 assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity), materialTypeName);
-            } else if (!this.baseNormalMap && window.currentModelDirectory) {
-                const path = getTexturePath('outside_normal.png', window.currentModelDirectory);
-                const loader = new THREE.TextureLoader();
-                this.baseNormalMap = loader.load(
-                    path,
-                    () => logDebug(`Loaded base normal map from ${path}`),
-                    undefined,
-                    () => logWarn(`Could not load base normal map from ${path}`)
-                );
-                this.baseNormalMap.colorSpace = THREE.NoColorSpace;
-                this.baseNormalMap.needsUpdate = true;
-                const scale = baseProperties.normalScale?.clone() || new THREE.Vector2(materialProps.normalScale || 1.0, materialProps.normalScale || 1.0);
-                assignNormalMap(this.baseNormalMap, scale, 'model');
+            } else if (window.currentModelDirectory) {
+                const scale =
+                    baseProperties.normalScale?.clone() ||
+                    new THREE.Vector2(materialProps.normalScale || 1.0, materialProps.normalScale || 1.0);
+                if (this.baseNormalMap) {
+                    assignNormalMap(this.baseNormalMap, scale, 'model');
+                } else {
+                    this.loadBaseNormalMap().then((tex) => {
+                        if (tex) {
+                            assignNormalMap(tex, scale, 'model');
+                        }
+                    });
+                }
             } else if (this.baseNormalMap) {
                 const scale = baseProperties.normalScale?.clone() || new THREE.Vector2(materialProps.normalScale || 1.0, materialProps.normalScale || 1.0);
                 assignNormalMap(this.baseNormalMap, scale, 'model');
@@ -829,5 +872,6 @@ export class TextureCompositor {
         }
         // Clear cached base normal map so it reloads for new models
         this.baseNormalMap = null;
+        this._baseNormalPromise = null;
     }
 }
