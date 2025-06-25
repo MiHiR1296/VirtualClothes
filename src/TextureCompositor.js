@@ -23,8 +23,15 @@ export class TextureCompositor {
      * @param {string} materialTypeName - Selected material type
      * @param {object} baseProperties - Properties of the original material
      * @param {THREE.Texture} [fallbackNormalMap] - Optional fallback map, typically from the outside material
+     * @param {THREE.Vector2} [fallbackNormalScale] - Scale to use with the fallback normal map
      */
-    applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties, fallbackNormalMap = null) {
+    applyNormalMapToMaterial(
+        newMaterial,
+        materialTypeName,
+        baseProperties,
+        fallbackNormalMap = null,
+        fallbackNormalScale = null
+    ) {
         const materialProps = materialTypes[materialTypeName].properties;
         const normalMap = this.loadedNormalMaps.get(materialTypeName);
 
@@ -43,7 +50,10 @@ export class TextureCompositor {
                 assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
             } else if (fallbackNormalMap) {
                 const intensity = materialProps.normalScale || 1.0;
-                assignNormalMap(fallbackNormalMap, new THREE.Vector2(intensity, intensity));
+                const scale =
+                    fallbackNormalScale?.clone() ||
+                    new THREE.Vector2(intensity, intensity);
+                assignNormalMap(fallbackNormalMap, scale);
             } else if (normalMap) {
                 const normalIntensity = materialProps.normalScale || 1.0;
                 assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
@@ -456,7 +466,8 @@ export class TextureCompositor {
                 newMaterial,
                 materialTypeName,
                 baseProperties,
-                outsideMaterial?.normalMap || null
+                outsideMaterial?.normalMap || null,
+                outsideMaterial?.normalScale || null
             );
         }
     
@@ -628,7 +639,8 @@ export class TextureCompositor {
                     newMaterial,
                     materialTypeName,
                     baseProperties,
-                    outsideMaterial?.normalMap || null
+                    outsideMaterial?.normalMap || null,
+                    outsideMaterial?.normalScale || null
                 );
             
         // Clean up old material if different and managed by this compositor
