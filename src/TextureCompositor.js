@@ -14,7 +14,6 @@ export class TextureCompositor {
         this.appliedLayersByObject = new Map(); // Track which layers are applied to which objects
         this.createdMaterials = new Set(); // Track materials created by updateMaterial
         this.cachedOutsideMaterial = null; // Fallback outside material if no mesh exists
-        this._outsideMaterialPromise = null; // In-flight load promise
         this.loadNormalMapsForMaterialTypes();
     }
 
@@ -291,7 +290,7 @@ export class TextureCompositor {
             let envMapIntensity = 1.0;
             
             // Find the outside material to match properties
-            const outsideMaterial = await this.findOutsideMaterial();
+            const outsideMaterial = this.findOutsideMaterial();
             
             // Create texture directly with Three.js instead of using canvas for repeating patterns
             // This avoids seams in the 3D view when repeating patterns are used
@@ -685,80 +684,72 @@ export class TextureCompositor {
             logError('Error creating repeating texture material:', error);
         }
     }
-    async findOutsideMaterial() {
+    findOutsideMaterial() {
         if (this.cachedOutsideMaterial) {
             return this.cachedOutsideMaterial;
         }
 
-        if (this._outsideMaterialPromise) {
-            return this._outsideMaterialPromise;
-        }
+        let outsideMaterial = null;
+        let foundOn = null;
 
-        this._outsideMaterialPromise = (async () => {
-            let outsideMaterial = null;
-            let foundOn = null;
+        if (this.scene) {
+            // Prefer materials explicitly named "outside"
+            this.scene.traverse((object) => {
+                if (outsideMaterial) return;
+                if (
+                    object.isMesh &&
+                    object.material &&
+                    object.name.toLowerCase().includes('outside')
+                ) {
+                    outsideMaterial = object.material;
+                    foundOn = object.name;
+                }
+            });
 
-            if (this.scene) {
-                // Prefer materials explicitly named "outside"
+            // Fall back to collar materials if no outside mesh exists
+            if (!outsideMaterial) {
                 this.scene.traverse((object) => {
                     if (outsideMaterial) return;
                     if (
                         object.isMesh &&
                         object.material &&
-                        object.name.toLowerCase().includes('outside')
+                        object.name.toLowerCase().includes('collar')
                     ) {
                         outsideMaterial = object.material;
                         foundOn = object.name;
                     }
                 });
-
-                // Fall back to collar materials if no outside mesh exists
-                if (!outsideMaterial) {
-                    this.scene.traverse((object) => {
-                        if (outsideMaterial) return;
-                        if (
-                            object.isMesh &&
-                            object.material &&
-                            object.name.toLowerCase().includes('collar')
-                        ) {
-                            outsideMaterial = object.material;
-                            foundOn = object.name;
-                        }
-                    });
-                }
             }
+        }
 
-            if (outsideMaterial) {
-                this.cachedOutsideMaterial = outsideMaterial;
-                logDebug(`Found outside material on ${foundOn}`);
-                this._outsideMaterialPromise = null;
-                return outsideMaterial;
-            }
-
-            // Attempt to load fallback outside normal map
+        if (!outsideMaterial) {
             const modelDir = window.currentModelDirectory;
             if (modelDir) {
                 const path = getTexturePath('outside_normal.png', modelDir);
-                try {
-                    const texture = await new THREE.TextureLoader().loadAsync(path);
-                    texture.colorSpace = THREE.NoColorSpace;
-                    texture.needsUpdate = true;
-                    outsideMaterial = new THREE.MeshStandardMaterial({
-                        normalMap: texture,
-                        normalScale: new THREE.Vector2(1, 1)
-                    });
-                    this.cachedOutsideMaterial = outsideMaterial;
-                    logDebug(`Loaded fallback outside normal from ${path}`);
-                } catch (err) {
-                    logWarn(`Could not load fallback outside normal from ${path}`);
-                }
+                const texture = new THREE.TextureLoader().load(
+                    path,
+                    () => logDebug(`Loaded fallback outside normal from ${path}`),
+                    undefined,
+                    () => logWarn(`Could not load fallback outside normal from ${path}`)
+                );
+                texture.colorSpace = THREE.NoColorSpace;
+                texture.needsUpdate = true;
+                outsideMaterial = new THREE.MeshStandardMaterial({
+                    normalMap: texture,
+                    normalScale: new THREE.Vector2(1, 1)
+                });
+                foundOn = 'fallback';
             }
+        }
 
-            this._outsideMaterialPromise = null;
-            return outsideMaterial;
-        })();
+        if (outsideMaterial) {
+            this.cachedOutsideMaterial = outsideMaterial;
+            if (foundOn) {
+                logDebug(`Found outside material on ${foundOn}`);
+            }
+        }
 
-        return this._outsideMaterialPromise;
+        return outsideMaterial;
     }
     
     // Get parts that are already assigned to visible layers
