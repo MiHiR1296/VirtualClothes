@@ -14,6 +14,7 @@ export class TextureCompositor {
         this.appliedLayersByObject = new Map(); // Track which layers are applied to which objects
         this.createdMaterials = new Set(); // Track materials created by updateMaterial
         this.cachedOutsideMaterial = null; // Fallback outside material if no mesh exists
+        this.baseNormalMap = null; // Normal map loaded from the current model directory
         this.loadNormalMapsForMaterialTypes();
     }
 
@@ -69,6 +70,22 @@ export class TextureCompositor {
             } else if (normalMap) {
                 const normalIntensity = materialProps.normalScale || 1.0;
                 assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity), materialTypeName);
+            } else if (!this.baseNormalMap && window.currentModelDirectory) {
+                const path = getTexturePath('outside_normal.png', window.currentModelDirectory);
+                const loader = new THREE.TextureLoader();
+                this.baseNormalMap = loader.load(
+                    path,
+                    () => logDebug(`Loaded base normal map from ${path}`),
+                    undefined,
+                    () => logWarn(`Could not load base normal map from ${path}`)
+                );
+                this.baseNormalMap.colorSpace = THREE.NoColorSpace;
+                this.baseNormalMap.needsUpdate = true;
+                const scale = baseProperties.normalScale?.clone() || new THREE.Vector2(materialProps.normalScale || 1.0, materialProps.normalScale || 1.0);
+                assignNormalMap(this.baseNormalMap, scale, 'model');
+            } else if (this.baseNormalMap) {
+                const scale = baseProperties.normalScale?.clone() || new THREE.Vector2(materialProps.normalScale || 1.0, materialProps.normalScale || 1.0);
+                assignNormalMap(this.baseNormalMap, scale, 'model');
             }
         } else if (normalMap) {
             const normalIntensity = materialProps.normalScale || 1.0;
@@ -810,5 +827,7 @@ export class TextureCompositor {
         if (preserveOriginalMaterials && originalMaterialsBackup) {
             this.originalMaterials = originalMaterialsBackup;
         }
+        // Clear cached base normal map so it reloads for new models
+        this.baseNormalMap = null;
     }
 }
