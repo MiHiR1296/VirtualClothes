@@ -18,6 +18,9 @@ const DEFAULT_TRANSFORM = {
   repeat: false
 };
 
+// How often to propagate transform updates to the parent (ms)
+export const TRANSFORM_UPDATE_DELAY_MS = 50;
+
 const getCanvasTransform = (activeLayer, canvas) => {
   if (!activeLayer?.transformations || !canvas) return DEFAULT_TRANSFORM;
   
@@ -41,6 +44,29 @@ const UVEditor = React.memo(({ activeLayer, onTransformChange }) => {
   const [startPos, setStartPos] = React.useState({ x: 0, y: 0 });
   const localTransformRef = useRef(DEFAULT_TRANSFORM);
   const [repeatMode, setRepeatMode] = React.useState(false);
+  const updateTimeoutRef = useRef(null);
+
+  const scheduleTransformUpdate = useCallback((transform) => {
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    updateTimeoutRef.current = setTimeout(() => {
+      onTransformChange(activeLayer.id, {
+        transformations: {
+          offset: {
+            x: transform.x / canvasRef.current.width,
+            y: transform.y / canvasRef.current.height
+          },
+          scale: transform.scale,
+          rotation: transform.rotation,
+          repeat: transform.repeat,
+          flipX: transform.flipX,
+          flipY: transform.flipY
+        }
+      });
+      updateTimeoutRef.current = null;
+    }, TRANSFORM_UPDATE_DELAY_MS);
+  }, [activeLayer, onTransformChange]);
   
   // Initialize and update localTransform whenever activeLayer changes
   useEffect(() => {
@@ -237,21 +263,9 @@ const UVEditor = React.memo(({ activeLayer, onTransformChange }) => {
     
     setStartPos({ x, y });
 
-    // Update the layer transformations using normalized coordinates (0-1 range)
-    onTransformChange(activeLayer.id, {
-      transformations: {
-        offset: { 
-          x: transform.x / canvas.width,
-          y: transform.y / canvas.height
-        },
-        scale: transform.scale,
-        rotation: transform.rotation,
-        repeat: transform.repeat,
-        flipX: transform.flipX,
-        flipY: transform.flipY
-      }
-    });
-  }, [isDragging, activeLayer, startPos, tool, onTransformChange, drawCanvas]);
+    // Schedule a throttled update to parent
+    scheduleTransformUpdate(transform);
+  }, [isDragging, activeLayer, startPos, tool, scheduleTransformUpdate, drawCanvas]);
 
   const handleFlip = useCallback((axis) => {
     const transform = {
@@ -262,39 +276,18 @@ const UVEditor = React.memo(({ activeLayer, onTransformChange }) => {
     localTransformRef.current = transform;
     requestAnimationFrame(() => drawCanvas());
 
-    // Use object-based update
-    onTransformChange(activeLayer.id, {
-      transformations: {
-        offset: { 
-          x: transform.x / canvasRef.current.width,
-          y: transform.y / canvasRef.current.height
-        },
-        scale: transform.scale,
-        rotation: transform.rotation,
-        repeat: transform.repeat,
-        flipX: transform.flipX,
-        flipY: transform.flipY
-      }
-    });
-  }, [activeLayer, onTransformChange, drawCanvas]);
+    // Schedule a throttled update
+    scheduleTransformUpdate(transform);
+  }, [activeLayer, scheduleTransformUpdate, drawCanvas]);
 
   const handleReset = useCallback(() => {
     localTransformRef.current = DEFAULT_TRANSFORM;
     setRepeatMode(false);
     requestAnimationFrame(() => drawCanvas());
     
-    // Use object-based update
-    onTransformChange(activeLayer.id, {
-      transformations: {
-        offset: { x: 0, y: 0 },
-        scale: 1,
-        rotation: 0,
-        repeat: false,
-        flipX: 1,
-        flipY: 1
-      }
-    });
-  }, [activeLayer, onTransformChange, drawCanvas]);
+    // Schedule update after reset
+    scheduleTransformUpdate(DEFAULT_TRANSFORM);
+  }, [activeLayer, scheduleTransformUpdate, drawCanvas]);
 
   const handleRepeatChange = useCallback((e) => {
     const isRepeat = e.target.checked;
@@ -308,27 +301,18 @@ const UVEditor = React.memo(({ activeLayer, onTransformChange }) => {
     localTransformRef.current = transform;
     requestAnimationFrame(() => drawCanvas());
 
-    // Use object-based update
-    onTransformChange(activeLayer.id, {
-      transformations: {
-        offset: { 
-          x: transform.x / canvasRef.current.width,
-          y: transform.y / canvasRef.current.height
-        },
-        scale: transform.scale,
-        rotation: transform.rotation,
-        repeat: isRepeat,
-        flipX: transform.flipX,
-        flipY: transform.flipY
-      }
-    });
-  }, [activeLayer, onTransformChange, drawCanvas]);
+    // Schedule update with new repeat value
+    scheduleTransformUpdate(transform);
+  }, [activeLayer, scheduleTransformUpdate, drawCanvas]);
 
   useEffect(() => {
     loadUVMap();
     return () => {
       if (renderRequestRef.current) {
         cancelAnimationFrame(renderRequestRef.current);
+      }
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
     };
   }, []);
