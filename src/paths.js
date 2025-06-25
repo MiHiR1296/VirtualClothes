@@ -12,7 +12,7 @@ export const getModelPath = (modelPath) => {
 
 export const getTexturePath = (texturePath, modelDirectory = '') => {
     // Remove leading and trailing slashes, and replace multiple slashes
-    const cleanPath = texturePath
+    let cleanPath = texturePath
         .replace(/^\/+/, '')     // Remove leading slashes
         .replace(/\/+$/, '')     // Remove trailing slashes
         .replace(/\/+/g, '/');   // Replace multiple consecutive slashes
@@ -27,9 +27,12 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
     }
 
     if (cleanPath.startsWith('thread/')) {
-        // Replace 'thread/' with 'Threads/' for these specific textures
-        const threadPath = cleanPath.replace('thread/', 'Threads/');
-        return `${BASE_URL}Textures/${threadPath}`;
+        // Replace 'thread/' with 'Threads/' and default to .jpg extension
+        cleanPath = cleanPath.replace('thread/', 'Threads/');
+        if (!/\.(png|jpg|jpeg|exr|webp|tiff)$/i.test(cleanPath)) {
+            cleanPath += '.jpg';
+        }
+        return `${BASE_URL}Textures/${cleanPath}`;
     }
     
     // If the file extension is not provided, try to resolve it

@@ -220,10 +220,10 @@ export class ModelLoader {
                 throw new Error(`Invalid model selection: ${selectedModel}`);
             }
     
-            // Use simple path joining
-            const modelDirectory = `./${modelConfig.directory}`;
+            // Use simple path joining without leading ./ to avoid duplicate paths
+            const modelDirectory = `${modelConfig.directory}`;
             logDebug('Loading model from directory:', modelDirectory);
-            
+
             // Set global variables for access by other components
             window.currentModel = selectedModel;
             window.currentModelDirectory = modelDirectory;
