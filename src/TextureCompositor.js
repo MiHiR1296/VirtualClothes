@@ -429,7 +429,6 @@ export class TextureCompositor {
         }
     
             // Clean up old material if different and managed by this compositor
-            const originalMaterial = this.originalMaterials.get(object.name);
             if (
                 object.material &&
                 object.material !== newMaterial &&
@@ -603,7 +602,6 @@ export class TextureCompositor {
                 }
             
         // Clean up old material if different and managed by this compositor
-        const originalMaterial = this.originalMaterials.get(object.name);
         if (
             object.material &&
             object.material !== newMaterial &&
