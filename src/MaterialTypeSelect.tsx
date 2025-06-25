@@ -8,7 +8,7 @@ export const NORMAL_MAP_PATHS: {
 } = {
   PRINT: './Textures/Normals/print_normal.png',
   EMBROIDERY: './Textures/Normals/embroidery_normal.png',
-  GENERIC: './Textures/Normals/generic_normal.png'
+  GENERIC: './Textures/Normals/print_normal.png'
 };
 
 // Change materialTypes to use explicit typing instead of const assertion
