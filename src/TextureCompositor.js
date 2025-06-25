@@ -696,21 +696,16 @@ export class TextureCompositor {
 
         if (this.scene) {
             this.scene.traverse((object) => {
-                if (object.isMesh && (
-                        object.name.toLowerCase().includes('outside') ||
-                        object.name.toLowerCase().includes('collar')
-                    )) {
-                    if (!this.originalMaterials.has(object.name) && object.material) {
+                if (!object.isMesh || !object.material) return;
+
+                const lower = object.name.toLowerCase();
+
+                if (lower.includes('outside')) {
+                    if (!this.originalMaterials.has(object.name)) {
                         const original = object.material.clone();
                         const textureProps = [
-                            'map',
-                            'normalMap',
-                            'roughnessMap',
-                            'metalnessMap',
-                            'aoMap',
-                            'emissiveMap',
-                            'alphaMap',
-                            'bumpMap'
+                            'map', 'normalMap', 'roughnessMap', 'metalnessMap',
+                            'aoMap', 'emissiveMap', 'alphaMap', 'bumpMap'
                         ];
                         textureProps.forEach(prop => {
                             if (object.material[prop]) {
@@ -720,7 +715,24 @@ export class TextureCompositor {
                         this.originalMaterials.set(object.name, original);
                     }
                     const original = this.originalMaterials.get(object.name);
-                    outsideMaterial = original || object.material || outsideMaterial;
+                    outsideMaterial = original || object.material;
+                    outsideName = object.name;
+                } else if (!outsideMaterial && lower.includes('collar')) {
+                    if (!this.originalMaterials.has(object.name)) {
+                        const original = object.material.clone();
+                        const textureProps = [
+                            'map', 'normalMap', 'roughnessMap', 'metalnessMap',
+                            'aoMap', 'emissiveMap', 'alphaMap', 'bumpMap'
+                        ];
+                        textureProps.forEach(prop => {
+                            if (object.material[prop]) {
+                                original[prop] = object.material[prop].clone();
+                            }
+                        });
+                        this.originalMaterials.set(object.name, original);
+                    }
+                    const original = this.originalMaterials.get(object.name);
+                    outsideMaterial = original || object.material;
                     outsideName = object.name;
                 }
             });
@@ -728,7 +740,6 @@ export class TextureCompositor {
 
         if (outsideMaterial) {
             logDebug(`Found outside material on ${outsideName}`);
-            // Cache for later use
             this.fallbackOutsideMaterial = {
                 normalMap: outsideMaterial.normalMap ? outsideMaterial.normalMap.clone() : null,
                 normalScale: outsideMaterial.normalScale ? outsideMaterial.normalScale.clone() : new THREE.Vector2(1, 1)
