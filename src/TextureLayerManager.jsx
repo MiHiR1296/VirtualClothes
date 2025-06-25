@@ -126,8 +126,8 @@ export default function TextureLayerManager() {
           return;
         }
 
-        // Complete reset of the compositor to clear any cached state
-        compositor.reset();
+        // Reset the compositor but keep the originals so visibility toggles work
+        compositor.reset(true);
 
         // Make a fresh copy of layers to ensure we're working with the most current state
         const currentLayers = [...layers];
