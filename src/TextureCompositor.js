@@ -23,23 +23,28 @@ export class TextureCompositor {
         const materialProps = materialTypes[materialTypeName].properties;
         const normalMap = this.loadedNormalMaps.get(materialTypeName);
 
+        const assignNormalMap = (map, scale) => {
+            newMaterial.normalMap = map;
+            if (newMaterial.normalMap) {
+                newMaterial.normalMap.colorSpace = THREE.NoColorSpace;
+                newMaterial.normalMap.needsUpdate = true;
+            }
+            newMaterial.normalScale = scale.clone();
+            newMaterial.needsUpdate = true;
+        };
+
         if (materialTypeName === 'base') {
             if (baseProperties.normalMap) {
-                newMaterial.normalMap = baseProperties.normalMap;
-                newMaterial.normalScale = baseProperties.normalScale.clone();
+                assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
             } else if (normalMap) {
-                newMaterial.normalMap = normalMap;
                 const normalIntensity = materialProps.normalScale || 1.0;
-                newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+                assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
             }
         } else if (normalMap) {
-            newMaterial.normalMap = normalMap;
             const normalIntensity = materialProps.normalScale || 1.0;
-            newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+            assignNormalMap(normalMap, new THREE.Vector2(normalIntensity, normalIntensity));
         } else if (baseProperties.normalMap) {
-            // Fallback to model normal map if no specific one exists
-            newMaterial.normalMap = baseProperties.normalMap;
-            newMaterial.normalScale = baseProperties.normalScale.clone();
+            assignNormalMap(baseProperties.normalMap, baseProperties.normalScale);
         }
     }
 
@@ -51,11 +56,12 @@ export class TextureCompositor {
                 try {
                     const normalMap = await new Promise((resolve, reject) => {
                         loader.load(
-                            path, 
+                            path,
                             texture => {
                                 texture.wrapS = THREE.RepeatWrapping;
                                 texture.wrapT = THREE.RepeatWrapping;
                                 texture.flipY = false;
+                                texture.colorSpace = THREE.NoColorSpace;
                                 resolve(texture);
                             },
                             undefined,
