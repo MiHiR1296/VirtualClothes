@@ -607,14 +607,31 @@ export class TextureCompositor {
                     newMaterial.sheenRoughness = layer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
                 }
 
-                // Apply normal map from material type if available
+                // Apply normal map logic
                 const normalMap = this.loadedNormalMaps.get(materialTypeName);
-                if (normalMap) {
+                if (materialTypeName === 'base') {
+                    // Use the model's original normal map when available
+                    if (baseProperties.normalMap) {
+                        newMaterial.normalMap = baseProperties.normalMap;
+                        newMaterial.normalScale = baseProperties.normalScale.clone();
+                        console.log(`Preserved original base normal map for ${object.name} (repeating)`);
+                    } else if (normalMap) {
+                        newMaterial.normalMap = normalMap;
+                        const normalIntensity = materialProps.normalScale || 1.0;
+                        newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+                        console.log(`Applied base normal map from path for ${object.name} (repeating)`);
+                    }
+                } else if (normalMap) {
+                    // Material-specific normal map
                     newMaterial.normalMap = normalMap;
-                    // Set appropriate normal scale
                     const normalIntensity = materialProps.normalScale || 1.0;
                     newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
                     console.log(`Applied normal map for material type ${materialTypeName} to repeating texture`);
+                } else if (baseProperties.normalMap) {
+                    // Fallback to model normal map if no specific one exists
+                    newMaterial.normalMap = baseProperties.normalMap;
+                    newMaterial.normalScale = baseProperties.normalScale.clone();
+                    console.log(`Fallback to original normal map for ${object.name} (repeating)`);
                 }
             
         // Clean up old material if different and managed by this compositor
