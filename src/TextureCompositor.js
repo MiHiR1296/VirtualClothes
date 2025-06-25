@@ -42,10 +42,12 @@ export class TextureCompositor {
                 cloned.colorSpace = THREE.NoColorSpace;
                 cloned.needsUpdate = true;
                 newMaterial.normalMap = cloned;
-                logDebug(`Applied normal map from ${source}`, { scale: scale.toArray() });
+                logInfo(`Applied normal map from ${source}`, {
+                    scale: scale.toArray(),
+                });
             } else {
                 newMaterial.normalMap = null;
-                logDebug("Cleared normal map", { source });
+                logInfo("Cleared normal map", { source });
             }
             newMaterial.normalScale = scale.clone();
             newMaterial.needsUpdate = true;
@@ -686,10 +688,9 @@ export class TextureCompositor {
         let outsideMaterial = null;
         if (this.scene) {
             this.scene.traverse((object) => {
-                if (object.isMesh && 
-                    object.material && 
-                    object.name.toLowerCase().includes('outside')) {
-                    outsideMaterial = object.material;
+                if (object.isMesh && object.name.toLowerCase().includes('outside')) {
+                    const original = this.originalMaterials.get(object.name);
+                    outsideMaterial = original || object.material || outsideMaterial;
                 }
             });
         }
