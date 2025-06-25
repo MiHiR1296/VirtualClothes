@@ -14,6 +14,35 @@ export class TextureCompositor {
         this.loadNormalMapsForMaterialTypes();
     }
 
+    /**
+     * Apply the appropriate normal map to a material based on the selected
+     * material type. This helper is used for both repeating and non-repeating
+     * textures so the same logic runs regardless of layer configuration.
+     */
+    applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties) {
+        const materialProps = materialTypes[materialTypeName].properties;
+        const normalMap = this.loadedNormalMaps.get(materialTypeName);
+
+        if (materialTypeName === 'base') {
+            if (baseProperties.normalMap) {
+                newMaterial.normalMap = baseProperties.normalMap;
+                newMaterial.normalScale = baseProperties.normalScale.clone();
+            } else if (normalMap) {
+                newMaterial.normalMap = normalMap;
+                const normalIntensity = materialProps.normalScale || 1.0;
+                newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+            }
+        } else if (normalMap) {
+            newMaterial.normalMap = normalMap;
+            const normalIntensity = materialProps.normalScale || 1.0;
+            newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
+        } else if (baseProperties.normalMap) {
+            // Fallback to model normal map if no specific one exists
+            newMaterial.normalMap = baseProperties.normalMap;
+            newMaterial.normalScale = baseProperties.normalScale.clone();
+        }
+    }
+
     async loadNormalMapsForMaterialTypes() {
         const loader = new THREE.TextureLoader();
         
@@ -408,40 +437,8 @@ export class TextureCompositor {
                 newMaterial.sheenRoughness = topLayer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
             }
             
-            // IMPROVED NORMAL MAP HANDLING
-            if (materialTypeName === 'base') {
-                // For base material type, preserve the original model's normal map if it exists
-                if (baseProperties.normalMap) {
-                    newMaterial.normalMap = baseProperties.normalMap;
-                    newMaterial.normalScale = baseProperties.normalScale.clone();
-                    console.log(`Preserved original base normal map for ${object.name}`);
-                } else {
-                    // If original didn't have normal map, check if we should load one
-                    const normalMap = this.loadedNormalMaps.get(materialTypeName);
-                    if (normalMap) {
-                        newMaterial.normalMap = normalMap;
-                        const normalIntensity = materialProps.normalScale || 1.0;
-                        newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
-                        console.log(`Applied base normal map for ${object.name}`);
-                    }
-                }
-            } else {
-                // For other material types (like embroidery or print), use the type-specific normal map
-                const normalMap = this.loadedNormalMaps.get(materialTypeName);
-                if (normalMap) {
-                    newMaterial.normalMap = normalMap;
-                    const normalIntensity = materialProps.normalScale || 1.0;
-                    newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
-                    console.log(`Applied ${materialTypeName} normal map for ${object.name}`);
-                } else {
-                    // Fallback to original normal map if no material-specific one exists
-                    if (baseProperties.normalMap) {
-                        newMaterial.normalMap = baseProperties.normalMap;
-                        newMaterial.normalScale = baseProperties.normalScale.clone();
-                        console.log(`Fallback to original normal map for ${object.name} (no ${materialTypeName} normal map)`);
-                    }
-                }
-            }
+            // Apply the appropriate normal map
+            this.applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties);
         }
     
             // Clean up old material if different and managed by this compositor
@@ -607,32 +604,8 @@ export class TextureCompositor {
                     newMaterial.sheenRoughness = layer.materialProperties.sheenRoughness ?? (materialProps.sheenRoughness || 0);
                 }
 
-                // Apply normal map logic
-                const normalMap = this.loadedNormalMaps.get(materialTypeName);
-                if (materialTypeName === 'base') {
-                    // Use the model's original normal map when available
-                    if (baseProperties.normalMap) {
-                        newMaterial.normalMap = baseProperties.normalMap;
-                        newMaterial.normalScale = baseProperties.normalScale.clone();
-                        console.log(`Preserved original base normal map for ${object.name} (repeating)`);
-                    } else if (normalMap) {
-                        newMaterial.normalMap = normalMap;
-                        const normalIntensity = materialProps.normalScale || 1.0;
-                        newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
-                        console.log(`Applied base normal map from path for ${object.name} (repeating)`);
-                    }
-                } else if (normalMap) {
-                    // Material-specific normal map
-                    newMaterial.normalMap = normalMap;
-                    const normalIntensity = materialProps.normalScale || 1.0;
-                    newMaterial.normalScale = new THREE.Vector2(normalIntensity, normalIntensity);
-                    console.log(`Applied normal map for material type ${materialTypeName} to repeating texture`);
-                } else if (baseProperties.normalMap) {
-                    // Fallback to model normal map if no specific one exists
-                    newMaterial.normalMap = baseProperties.normalMap;
-                    newMaterial.normalScale = baseProperties.normalScale.clone();
-                    console.log(`Fallback to original normal map for ${object.name} (repeating)`);
-                }
+                // Apply the appropriate normal map
+                this.applyNormalMapToMaterial(newMaterial, materialTypeName, baseProperties);
             
         // Clean up old material if different and managed by this compositor
         if (
