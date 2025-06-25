@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 // DirectTextureManipulator.js
 // Handles direct texture manipulation on 3D models in the scene
 
@@ -146,7 +147,7 @@ export class DirectTextureManipulator {
         // Add context menu prevention
         this.renderer.domElement.addEventListener('contextmenu', this.preventContextMenu);
         
-        console.log('Direct texture manipulation enabled');
+        logDebug('Direct texture manipulation enabled');
     }
 
     disable() {
@@ -178,7 +179,7 @@ export class DirectTextureManipulator {
         // Remove context menu prevention
         this.renderer.domElement.removeEventListener('contextmenu', this.preventContextMenu);
         
-        console.log('Direct texture manipulation disabled');
+        logDebug('Direct texture manipulation disabled');
     }
     
     preventContextMenu(e) {
@@ -344,11 +345,11 @@ export class DirectTextureManipulator {
                 const handle = handleIntersections[0].object;
                 
                 if (handle === this.scaleHandle) {
-                    console.log("Scale handle clicked");
+                    logDebug("Scale handle clicked");
                     this.isScaling = true;
                     this.activeTool = 'scale'; // Set active tool to scale
                 } else if (handle === this.rotateHandle) {
-                    console.log("Rotate handle clicked");
+                    logDebug("Rotate handle clicked");
                     this.isRotating = true;
                     this.activeTool = 'rotate'; // Set active tool to rotate
                 }
@@ -462,7 +463,7 @@ export class DirectTextureManipulator {
                 this.controls.enabled = false;
             }
             
-            console.log(`Texture mesh clicked. Active tool: ${this.activeTool}`);
+            logDebug(`Texture mesh clicked. Active tool: ${this.activeTool}`);
         } else {
             // Clicked elsewhere, deselect
             this.selectedTextureMesh = null;
@@ -558,7 +559,7 @@ export class DirectTextureManipulator {
     handleMove(event) {
         // Get the current transformation from start
         if (!this.startTransform || !this.activeLayerId) {
-            console.error("Missing start transform or layer ID for move operation");
+            logError("Missing start transform or layer ID for move operation");
             return;
         }
         
@@ -592,7 +593,7 @@ export class DirectTextureManipulator {
         };
         
         // Log for debugging
-        // console.log(`Move: dx=${dx}, dy=${dy}, factor=${movementFactor}, newOffset=`, newOffset);
+        // logDebug(`Move: dx=${dx}, dy=${dy}, factor=${movementFactor}, newOffset=`, newOffset);
         
         // Apply the transformation, preserving all other properties
         this.textureContext.updateTransformation(this.activeLayerId, {
@@ -614,10 +615,10 @@ export class DirectTextureManipulator {
 
     handleScale(event) {
         // Debug log
-        console.log("Handling scale operation");
+        logDebug("Handling scale operation");
         
         if (!this.selectedTextureMesh || !this.startTransform || !this.activeLayerId) {
-            console.error("Missing required data for scale operation");
+            logError("Missing required data for scale operation");
             return;
         }
         
@@ -633,7 +634,7 @@ export class DirectTextureManipulator {
         
         // Skip if no valid starting distance
         if (!this.startDistance || this.startDistance === 0) {
-            console.error("Invalid starting distance for scaling");
+            logError("Invalid starting distance for scaling");
             this.startDistance = currentDistance;
             return;
         }
@@ -655,7 +656,7 @@ export class DirectTextureManipulator {
         const limitedScale = Math.max(0.1, Math.min(5, newScale));
         
         // Debug log
-        console.log(`Scale operation: startDist=${this.startDistance.toFixed(2)}, currentDist=${currentDistance.toFixed(2)}, factor=${dampedScaleFactor.toFixed(2)}, newScale=${limitedScale.toFixed(2)}`);
+        logDebug(`Scale operation: startDist=${this.startDistance.toFixed(2)}, currentDist=${currentDistance.toFixed(2)}, factor=${dampedScaleFactor.toFixed(2)}, newScale=${limitedScale.toFixed(2)}`);
         
         // Update transformation with scaled value, preserving other properties
         this.textureContext.updateTransformation(this.activeLayerId, {
@@ -668,10 +669,10 @@ export class DirectTextureManipulator {
 
     handleRotate(event) {
         // Debug log 
-        console.log("Handling rotate operation");
+        logDebug("Handling rotate operation");
         
         if (!this.selectedTextureMesh || !this.startTransform || !this.activeLayerId) {
-            console.error("Missing required data for rotation operation");
+            logError("Missing required data for rotation operation");
             return;
         }
         
@@ -687,7 +688,7 @@ export class DirectTextureManipulator {
         
         // Ensure we have a valid starting angle
         if (this.startAngle === undefined) {
-            console.error("No valid starting angle for rotation");
+            logError("No valid starting angle for rotation");
             this.startAngle = currentAngleRad;
             return;
         }
@@ -711,7 +712,7 @@ export class DirectTextureManipulator {
         if (newRotation < 0) newRotation += 360;
         
         // Debug log
-        console.log(`Rotation operation: startAngle=${(this.startAngle * 180/Math.PI).toFixed(2)}°, currentAngle=${(currentAngleRad * 180/Math.PI).toFixed(2)}°, diff=${dampedAngleDiff.toFixed(2)}°, newRotation=${newRotation.toFixed(2)}°`);
+        logDebug(`Rotation operation: startAngle=${(this.startAngle * 180/Math.PI).toFixed(2)}°, currentAngle=${(currentAngleRad * 180/Math.PI).toFixed(2)}°, diff=${dampedAngleDiff.toFixed(2)}°, newRotation=${newRotation.toFixed(2)}°`);
         
         // Update transformation with rotated value, preserving other properties
         this.textureContext.updateTransformation(this.activeLayerId, {
@@ -845,6 +846,6 @@ export class DirectTextureManipulator {
             this.rotateLabel = null;
         }
         
-        console.log('DirectTextureManipulator disposed');
+        logDebug('DirectTextureManipulator disposed');
     }
 }

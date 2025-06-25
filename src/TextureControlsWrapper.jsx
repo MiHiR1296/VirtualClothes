@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useState, useEffect, useRef } from 'react';
 import { Move, RotateCw, Maximize2, CornerUpLeft, Eye, EyeOff } from 'lucide-react';
 import { useTextureContext } from './TextureContext';
@@ -31,11 +32,11 @@ const TextureControlsWrapper = () => {
     if (!checkSceneObjects()) {
       const handleModelLoaded = () => {
         // Check again after model is loaded
-        console.log('Model loaded, checking scene objects availability...');
+        logDebug('Model loaded, checking scene objects availability...');
         const ready = checkSceneObjects();
         setSceneReady(ready);
         if (ready) {
-          console.log('Scene objects are now available');
+          logDebug('Scene objects are now available');
         }
       };
 
@@ -46,7 +47,7 @@ const TextureControlsWrapper = () => {
         if (checkSceneObjects()) {
           setSceneReady(true);
           clearInterval(intervalId);
-          console.log('Scene objects found via interval check');
+          logDebug('Scene objects found via interval check');
         }
       }, 1000);
       
@@ -61,7 +62,7 @@ const TextureControlsWrapper = () => {
   // Initialize manipulator once scene is ready
   useEffect(() => {
     if (sceneReady && !manipulatorInitialized) {
-      console.log('Initializing texture manipulator with scene objects...');
+      logDebug('Initializing texture manipulator with scene objects...');
       
       try {
         // Create a new manipulator instance
@@ -77,9 +78,9 @@ const TextureControlsWrapper = () => {
         manipulatorRef.current = manipulator;
         setManipulatorInitialized(true);
         
-        console.log('Texture manipulator initialized successfully');
+        logDebug('Texture manipulator initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize texture manipulator:', error);
+        logError('Failed to initialize texture manipulator:', error);
       }
     }
   }, [sceneReady, manipulatorInitialized, textureContext]);
@@ -94,7 +95,7 @@ const TextureControlsWrapper = () => {
   // Toggle direct manipulation
   const handleToggle = () => {
     if (!manipulatorRef.current) {
-      console.warn('Cannot toggle: Manipulator not initialized');
+      logWarn('Cannot toggle: Manipulator not initialized');
       return;
     }
     
@@ -140,7 +141,7 @@ const TextureControlsWrapper = () => {
       return;
     }
     
-    console.log('Manually initializing texture manipulator...');
+    logDebug('Manually initializing texture manipulator...');
     
     try {
       // Create a new manipulator instance
@@ -156,9 +157,9 @@ const TextureControlsWrapper = () => {
       manipulatorRef.current = manipulator;
       setManipulatorInitialized(true);
       
-      console.log('Texture manipulator initialized successfully');
+      logDebug('Texture manipulator initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize texture manipulator:', error);
+      logError('Failed to initialize texture manipulator:', error);
       alert('Error initializing texture manipulator: ' + error.message);
     }
   };

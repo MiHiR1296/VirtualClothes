@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 
 export class MaterialManager {
@@ -103,7 +104,7 @@ export class MaterialManager {
         if (loadingLog) {
             loadingLog.textContent = message;
         }
-        console.log(message);
+        logDebug(message);
     }
 
     async tryLoadTexture(basePath, mapType) {
@@ -220,7 +221,7 @@ export class MaterialManager {
                     });
                 }
             } catch (error) {
-                console.error('Error loading textures:', error);
+                logError('Error loading textures:', error);
             }
         }
 

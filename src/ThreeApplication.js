@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 import { LoadingManager } from './loadingManager.js';
 import { SceneManager } from './sceneSetup.js';
@@ -77,7 +78,7 @@ export class ThreeApplication {
 
             return true;
         } catch (error) {
-            console.error('Initialization error:', error);
+            logError('Initialization error:', error);
             this.loadingManager.updateLog(`Error: ${error.message}`);
             this.loadingManager.hide();
             throw error;
@@ -89,7 +90,7 @@ export class ThreeApplication {
     logEnvironmentIntensity() {
         if (this.lightingSystem) {
             const intensity = this.lightingSystem.getEnvironmentIntensity();
-            console.log('Environment light intensity:', intensity);
+            logDebug('Environment light intensity:', intensity);
         }
     }
 
@@ -109,7 +110,7 @@ export class ThreeApplication {
     
             // Don't reload if it's the same model
             if (this.currentModelId === modelId && this.loadedModels.has(modelId)) {
-                console.log('Model already loaded:', modelId);
+                logDebug('Model already loaded:', modelId);
                 return this.loadedModels.get(modelId);
             }
     
@@ -122,7 +123,7 @@ export class ThreeApplication {
     
             this.currentModelId = modelId;
     
-            console.log('Loading model:', modelId);
+            logDebug('Loading model:', modelId);
             const modelControls = await this.modelLoader.loadModels(
                 this.materialManager,
                 modelId
@@ -167,7 +168,7 @@ export class ThreeApplication {
             return modelControls;
     
         } catch (error) {
-            console.error('Error in ThreeApplication loadModel:', error);
+            logError('Error in ThreeApplication loadModel:', error);
             this.loadingManager.updateLog(`Error loading model: ${error.message}`);
             throw error;
         } finally {

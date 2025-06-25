@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 // TextureCache.js
 import * as THREE from 'three';
 
@@ -60,7 +61,7 @@ export class TextureCache {
             return texture;
 
         } catch (error) {
-            console.warn(`Failed to load texture: ${path}`, error);
+            logWarn(`Failed to load texture: ${path}`, error);
             this.failedTextures.add(cacheKey);
             return null;
         }

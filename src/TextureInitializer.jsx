@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useEffect, useState } from 'react';
 import { useTextureContext } from './TextureContext';
 
@@ -13,7 +14,7 @@ const TextureInitializer = () => {
       
       // If texture objects exist and we have no layers yet, create one
       if (textureObjects.length > 0 && layers.length === 0 && !hasInitialized) {
-        console.log('TextureInitializer: Found texture objects, creating initial layer');
+        logDebug('TextureInitializer: Found texture objects, creating initial layer');
         addLayer();
         setHasInitialized(true);
       }

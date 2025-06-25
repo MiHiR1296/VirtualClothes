@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 const BASE_URL = import.meta.env.BASE_URL || '/VirtualClothes/';
 
 export const getAssetPath = (path) => {
@@ -45,7 +46,7 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
                     .replace(/\/+$/, '');          // Remove any trailing slashes
                 
                 const fullPath = `${BASE_URL}Models/${cleanModelDir}/Textures/${pathWithExt}`;
-                console.log('Checking Model-Specific Texture Path:', {
+                logDebug('Checking Model-Specific Texture Path:', {
                     originalPath: texturePath,
                     pathWithExt,
                     fullPath
@@ -57,7 +58,7 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
             
             // Check global textures folder
             const globalPath = `${BASE_URL}Textures/${pathWithExt}`;
-            console.log('Checking Global Texture Path:', {
+            logDebug('Checking Global Texture Path:', {
                 originalPath: texturePath,
                 pathWithExt,
                 globalPath
@@ -76,7 +77,7 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
         
         const fullPath = `${BASE_URL}Models/${cleanModelDir}/Textures/${cleanPath}`;
         
-        console.log('Model-Specific Texture Path:', {
+        logDebug('Model-Specific Texture Path:', {
             texturePath,
             modelDirectory,
             cleanModelDir,
@@ -90,7 +91,7 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
     // Fallback to global textures folder
     const globalPath = `${BASE_URL}Textures/${cleanPath}`;
     
-    console.log('Global Texture Path:', {
+    logDebug('Global Texture Path:', {
         texturePath,
         cleanPath,
         globalPath

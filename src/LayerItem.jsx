@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ChevronUp, ChevronDown, Trash2, Upload, Edit } from 'lucide-react';
 import { useTextureContext } from './TextureContext';
@@ -70,7 +71,7 @@ export default function LayerItem({
       setSelectedParts(newSelectedParts);
       
       // Log the new selection for debugging
-      console.log(`Layer ${layer.id} (${layer.name}): Selected parts changed to:`, newSelectedParts);
+      logDebug(`Layer ${layer.id} (${layer.name}): Selected parts changed to:`, newSelectedParts);
       
       // First step: Update the layer data in context
       updateTransformation(layer.id, {
@@ -82,16 +83,16 @@ export default function LayerItem({
         // Get all texture objects from the scene
         const textureObjects = window.findTextureObjects?.() || [];
         if (textureObjects.length === 0) {
-          console.warn("No texture objects found to update");
+          logWarn("No texture objects found to update");
           return;
         }
         
-        console.log(`Updating ${textureObjects.length} texture objects with new part selection`);
+        logDebug(`Updating ${textureObjects.length} texture objects with new part selection`);
         
         // Get the compositor
         const compositor = window._textureCompositor;
         if (!compositor) {
-          console.warn('TextureCompositor not available');
+          logWarn('TextureCompositor not available');
           return;
         }
         
@@ -121,7 +122,7 @@ export default function LayerItem({
             // Completely fresh update
             compositor.updateMaterial(object, latestLayers);
           } catch (error) {
-            console.error(`Error updating material for ${object.name}:`, error);
+            logError(`Error updating material for ${object.name}:`, error);
           }
         });
       };
@@ -130,7 +131,7 @@ export default function LayerItem({
       setTimeout(updateTextureMeshes, 10);
       
     } catch (error) {
-      console.error('Error updating part selection:', error);
+      logError('Error updating part selection:', error);
     }
   };
 

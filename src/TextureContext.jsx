@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { materialTypes } from './MaterialTypeSelect';
 
@@ -32,12 +33,12 @@ export const TextureProvider = ({ children }) => {
     const textureObjects = window.findTextureObjects?.() || [];
     if (textureObjects.length === 0) return;
     
-    console.log(`Updating textures for ${textureObjects.length} objects based on part selection for layer ${layerId}`);
+    logDebug(`Updating textures for ${textureObjects.length} objects based on part selection for layer ${layerId}`);
     
     // Get the compositor instance (this assumes it's available in the global scope)
     const compositor = window.textureCompositor || window._textureCompositor;
     if (!compositor) {
-      console.warn('TextureCompositor instance not found in global scope');
+      logWarn('TextureCompositor instance not found in global scope');
       return;
     }
     

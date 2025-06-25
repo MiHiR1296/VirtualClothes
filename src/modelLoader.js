@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ModelControls } from './modelControls.js';
@@ -187,7 +188,7 @@ export class ModelLoader {
     async  loadModelPart(url, modelConfig, mixer, materialSets = null) {
         return new Promise((resolve, reject) => {
             const fullPath = this.getFullPath(url);
-            console.log('Loading model from:', fullPath);
+            logDebug('Loading model from:', fullPath);
             
             this.gltfLoader.load(
                 fullPath,
@@ -199,12 +200,12 @@ export class ModelLoader {
                         await this.processLoadedModel(gltf, modelConfig, materialSets, mixer);
                         resolve(gltf);
                     } catch (error) {
-                        console.error('Error processing model:', error);
+                        logError('Error processing model:', error);
                         reject(error);
                     }
                 },
                 (progress) => {
-                    console.log(`Loading progress: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
+                    logDebug(`Loading progress: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
                 },
                 reject
             );
@@ -221,7 +222,7 @@ export class ModelLoader {
     
             // Use simple path joining
             const modelDirectory = `./${modelConfig.directory}`;
-            console.log('Loading model from directory:', modelDirectory);
+            logDebug('Loading model from directory:', modelDirectory);
             
             // Set global variables for access by other components
             window.currentModel = selectedModel;
@@ -243,14 +244,14 @@ export class ModelLoader {
             // Load each model part
             for (const filename of modelConfig.materials) {
                 const modelPath = `${modelDirectory}/${filename}`;
-                console.log('Loading model part:', modelPath);
+                logDebug('Loading model part:', modelPath);
                 
                 try {
                     await this.loadModelPart(modelPath, modelConfig, null, materialSets);
                     this.loadingManager.itemLoaded();
                     this.loadingManager.updateLog(`Loaded ${filename}`);
                 } catch (error) {
-                    console.error(`Error loading model part ${filename}:`, error);
+                    logError(`Error loading model part ${filename}:`, error);
                     throw error;
                 }
             }
@@ -275,7 +276,7 @@ export class ModelLoader {
                 }
             }));
             
-            console.log('Dispatched model-loaded event with parts:', 
+            logDebug('Dispatched model-loaded event with parts:', 
                 modelConfig.materials
                     .map(material => material.replace('.glb', ''))
                     .filter(part => !part.includes('Fronttex') && !part.includes('Backtex')),
@@ -285,7 +286,7 @@ export class ModelLoader {
     
             return this.modelControls;
         } catch (error) {
-            console.error('Error in loadModels:', error);
+            logError('Error in loadModels:', error);
             this.loadingManager.updateLog(`Error: ${error.message}`);
             throw error;
         } finally {
@@ -299,7 +300,7 @@ export class ModelLoader {
     //             return;
     //         }
     
-    //         console.log('Attempting to load model from:', url);
+    //         logDebug('Attempting to load model from:', url);
     
     //         this.gltfLoader.load(
     //             url,
@@ -308,7 +309,7 @@ export class ModelLoader {
     //                     await this.processLoadedModel(gltf, modelConfig, materialSets, mixer);
     //                     resolve(gltf);
     //                 } catch (error) {
-    //                     console.error('Error processing loaded model:', error);
+    //                     logError('Error processing loaded model:', error);
     //                     reject(error);
     //                 }
     //             },
@@ -317,7 +318,7 @@ export class ModelLoader {
     //                 this.loadingManager.updateLog(`Loading ${url.split('/').pop()}: ${percent}%`);
     //             },
     //             (error) => {
-    //                 console.error('Error loading model:', error);
+    //                 logError('Error loading model:', error);
     //                 reject(error);
     //             }
     //         );

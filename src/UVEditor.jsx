@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Move, RotateCw, Maximize2, CornerUpLeft, FlipHorizontal, FlipVertical } from 'lucide-react';
 import { TextureLoadingUtils } from './textureLoadingUtils';
@@ -328,10 +329,10 @@ const UVEditor = React.memo(({ activeLayer, onTransformChange }) => {
         );
         
         if (!loadedImg) {
-            console.warn('No UV map loaded');
+            logWarn('No UV map loaded');
         }
     } catch (error) {
-        console.error('Error loading UV map:', error);
+        logError('Error loading UV map:', error);
     }
   }, [drawCanvas]);
 

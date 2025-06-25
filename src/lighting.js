@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { getTexturePath } from './paths.js';
@@ -144,24 +145,24 @@ export class LightingSystem {
     }
 
     debugLightingState() {
-        console.log('=== LIGHTING SYSTEM DEBUG ===');
-        console.log('Current Intensity:', this.currentIntensity);
-        console.log('Config Intensity:', LIGHTING_CONFIG.environmentMap.intensity);
-        console.log('Config envMapIntensity:', LIGHTING_CONFIG.environmentMap.envMapIntensity);
-        console.log('Environment Map:', this.scene.environment ? 'Loaded' : 'Not loaded');
-        console.log('Environment Rotation:', this.environmentRotation);
-        console.log('Show HDRI Background:', this.showHDRIBackground);
+        logDebug('=== LIGHTING SYSTEM DEBUG ===');
+        logDebug('Current Intensity:', this.currentIntensity);
+        logDebug('Config Intensity:', LIGHTING_CONFIG.environmentMap.intensity);
+        logDebug('Config envMapIntensity:', LIGHTING_CONFIG.environmentMap.envMapIntensity);
+        logDebug('Environment Map:', this.scene.environment ? 'Loaded' : 'Not loaded');
+        logDebug('Environment Rotation:', this.environmentRotation);
+        logDebug('Show HDRI Background:', this.showHDRIBackground);
         
         // Check a sample of materials in the scene
         let materialCount = 0;
         this.scene.traverse((object) => {
           if (object.material && materialCount < 5) {
-            console.log(`Material ${object.name} envMapIntensity:`, 
+            logDebug(`Material ${object.name} envMapIntensity:`, 
                         object.material.envMapIntensity);
             materialCount++;
           }
         });
-        console.log('=========================');
+        logDebug('=========================');
       }
     
     createGradientBackground() {
@@ -279,10 +280,10 @@ export class LightingSystem {
         this.initialControlsTarget = null;
         this.initialModelRotation = null;
         
-        console.log(`HDRI loaded with intensity: ${intensityToUse}`);
+        logDebug(`HDRI loaded with intensity: ${intensityToUse}`);
 
     } catch (error) {
-        console.error('Error loading HDRI:', error);
+        logError('Error loading HDRI:', error);
     }
 }
 
@@ -296,7 +297,7 @@ rotateEnvironment(angle) {
     const camera = this.scene.userData.camera;
     const controls = this.scene.userData.controls;
     if (!camera || !controls) {
-        console.warn("Camera or controls not found for rotation");
+        logWarn("Camera or controls not found for rotation");
         return;
     }
     
@@ -309,7 +310,7 @@ rotateEnvironment(angle) {
     });
     
     if (!modelGroup) {
-        console.warn("Model not found for rotation");
+        logWarn("Model not found for rotation");
         return;
     }
     
@@ -346,7 +347,7 @@ rotateEnvironment(angle) {
     // Update the controls
     controls.update();
     
-    console.log("Rotated camera and model around model center:", angle, "degrees");
+    logDebug("Rotated camera and model around model center:", angle, "degrees");
 }
 
 
@@ -356,11 +357,11 @@ rotateEnvironment(angle) {
         
         if (show && this.currentEnvironmentMap) {
             this.scene.background = this.currentEnvironmentMap;
-            console.log("Showing HDRI background");
+            logDebug("Showing HDRI background");
         } else {
             // Use gradient background
             this.scene.background = this.createGradientBackground();
-            console.log("Showing gradient background");
+            logDebug("Showing gradient background");
         }
     }
 
@@ -379,7 +380,7 @@ initializeEnvironmentMap(intensity) {
     
     // Store the intensity we'll be using
     this.currentIntensity = intensityToUse;
-    console.log(`Initializing environment with intensity: ${intensityToUse}`);
+    logDebug(`Initializing environment with intensity: ${intensityToUse}`);
 
     const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     pmremGenerator.compileEquirectangularShader();
@@ -414,7 +415,7 @@ initializeEnvironmentMap(intensity) {
             texture.dispose();
             pmremGenerator.dispose();
             
-            console.log("Environment map initialized successfully with intensity:", this.currentIntensity);
+            logDebug("Environment map initialized successfully with intensity:", this.currentIntensity);
         }
     );
 }
@@ -424,7 +425,7 @@ initializeEnvironmentMap(intensity) {
 updateEnvironmentMapIntensity(value) {
     // Safety check for invalid values
     if (value === undefined || value === null || isNaN(value)) {
-        console.warn('Invalid intensity value:', value, 'using default:', LIGHTING_CONFIG.environmentMap.intensity);
+        logWarn('Invalid intensity value:', value, 'using default:', LIGHTING_CONFIG.environmentMap.intensity);
         value = LIGHTING_CONFIG.environmentMap.intensity;
     }
     
@@ -436,7 +437,7 @@ updateEnvironmentMapIntensity(value) {
     LIGHTING_CONFIG.environmentMap.intensity = value;
     
     // Log current state for debugging
-    console.log(`Updating environment map intensity to ${value}`);
+    logDebug(`Updating environment map intensity to ${value}`);
     
     // Update all materials in the scene
     let updatedMaterials = 0;
@@ -473,7 +474,7 @@ updateEnvironmentMapIntensity(value) {
         this.scene.environment.intensity = value;
     }
 
-    console.log(`Environment map intensity updated: ${value} (${updatedMaterials} materials updated)`);
+    logDebug(`Environment map intensity updated: ${value} (${updatedMaterials} materials updated)`);
 }
   
     createSpotLight(config) {

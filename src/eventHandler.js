@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 
 export class EventHandler {
@@ -120,7 +121,7 @@ export class EventHandler {
                     roughnessValue.textContent = roughness.toFixed(2);
                     metalValue.textContent = metalness.toFixed(2);
                     
-                    console.log(`Updated material UI - Roughness: ${roughness}, Metalness: ${metalness}`);
+                    logDebug(`Updated material UI - Roughness: ${roughness}, Metalness: ${metalness}`);
                 }
         };
         
@@ -238,7 +239,7 @@ export class EventHandler {
                         this.applyStoredTextureToObjects(this.findTextureObjects());
                     }
                 } catch (error) {
-                    console.error('Error changing model:', error);
+                    logError('Error changing model:', error);
                     this.loadingManager.updateLog(`Error loading model: ${error.message}`);
                 } finally {
                     this.loadingManager.hide();
@@ -267,7 +268,7 @@ export class EventHandler {
             logoUpload.addEventListener('change', (event) => {
                 const file = event.target.files?.[0];
                 if (!file?.type.match('image.*')) {
-                    console.error('File is not an image.');
+                    logError('File is not an image.');
                     return;
                 }
 
@@ -424,7 +425,7 @@ export class EventHandler {
             }
         });
         
-        console.log(`Found ${textureObjects.length} texture objects:`, 
+        logDebug(`Found ${textureObjects.length} texture objects:`, 
             textureObjects.map(o => o.name));
             
         return textureObjects;
@@ -536,7 +537,7 @@ export class EventHandler {
             
             // Only log when debugging is enabled
             if (window.DEBUG_COLOR_MANAGER) {
-                console.log(`Set color picker to exact color: ${exactColor}`);
+                logDebug(`Set color picker to exact color: ${exactColor}`);
             }
             return;
         }

@@ -1,15 +1,16 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 // textureLoadingUtils.js
 import * as THREE from 'three';
 
 export class TextureLoadingUtils {
     static async loadUVMap(currentModelDirectory, onLoad) {
         if (!currentModelDirectory) {
-            console.warn('No model directory provided for UV map loading');
+            logWarn('No model directory provided for UV map loading');
             return null;
         }
         
         // Debug information about environment
-        console.log('Environment Debug:', {
+        logDebug('Environment Debug:', {
             isDevelopment: import.meta.env.DEV,
             isProduction: import.meta.env.PROD,
             baseUrl: import.meta.env.BASE_URL,
@@ -36,7 +37,7 @@ export class TextureLoadingUtils {
             `/VirtualClothes/Models/${cleanModelDir}/UVmap.png`,
         ];
         
-        console.log('Attempting to load UV map from these paths:', possiblePaths);
+        logDebug('Attempting to load UV map from these paths:', possiblePaths);
         
         // Try each path until one works
         for (const path of possiblePaths) {
@@ -45,12 +46,12 @@ export class TextureLoadingUtils {
                     const img = new Image();
                     
                     img.onload = () => {
-                        console.log('Successfully loaded UV map from:', path);
+                        logDebug('Successfully loaded UV map from:', path);
                         resolve(img);
                     };
                     
                     img.onerror = () => {
-                        console.warn(`Failed to load UV map from: ${path}`);
+                        logWarn(`Failed to load UV map from: ${path}`);
                         reject(new Error(`Failed to load UV map from: ${path}`));
                     };
                     
@@ -67,7 +68,7 @@ export class TextureLoadingUtils {
         }
         
         // If all attempts fail, provide a fallback placeholder
-        console.log('Creating UV map placeholder as fallback');
+        logDebug('Creating UV map placeholder as fallback');
         
         // Generate a blank placeholder UV map
         try {
@@ -112,7 +113,7 @@ export class TextureLoadingUtils {
             
             return img;
         } catch (fallbackError) {
-            console.error('Even the fallback generation failed:', fallbackError);
+            logError('Even the fallback generation failed:', fallbackError);
             return null;
         }
     }
@@ -140,7 +141,7 @@ export class TextureLoadingUtils {
                     },
                     undefined,
                     (error) => {
-                        console.error('Error loading texture:', error);
+                        logError('Error loading texture:', error);
                         reject(error);
                     }
                 );

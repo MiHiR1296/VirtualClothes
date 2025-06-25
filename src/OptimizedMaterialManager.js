@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 import { getTexturePath } from './paths.js'; 
 import { textureCache } from './TextureCache';
@@ -120,7 +121,7 @@ export class OptimizedMaterialManager {
         }
 
         try {
-            console.log('\n📦 Starting Material Creation for:', modelConfig.directory);
+            logDebug('\n📦 Starting Material Creation for:', modelConfig.directory);
             const loadingPromise = this._loadMaterialsForModel(modelConfig);
             this.loadingPromises.set(cacheKey, loadingPromise);
             
@@ -145,7 +146,7 @@ export class OptimizedMaterialManager {
         this.meshAssignments.clear();
         
         for (const type of modelConfig.materialTypes) {
-            console.log(`Loading textures for type: ${type}`);
+            logDebug(`Loading textures for type: ${type}`);
             
             const materialConfig = this.getMaterialConfig(type);
             if (!materialConfig) continue;
@@ -199,7 +200,7 @@ export class OptimizedMaterialManager {
     getMaterialConfig(type) {
         const preset = this.materialPresets[type];
         if (!preset) {
-            console.warn(`No material preset found for type: ${type}`);
+            logWarn(`No material preset found for type: ${type}`);
             return null;
         }
         return preset;
@@ -214,7 +215,7 @@ export class OptimizedMaterialManager {
             .replace('./Models/', '')     // Remove leading './Models/'
             .replace(/\/Textures$/, '');  // Remove trailing '/Textures'
         
-        console.log('Texture Loading Debug:', {
+        logDebug('Texture Loading Debug:', {
             baseTexturePath,
             type,
             isSharedMaterial,
@@ -246,7 +247,7 @@ export class OptimizedMaterialManager {
                         fullPath = getTexturePath(adjustedFileName, modelDirectory);
                     }
     
-                    console.log(`Attempting to load ${textureType} texture:`, {
+                    logDebug(`Attempting to load ${textureType} texture:`, {
                         fileName,
                         fullPath,
                         isSharedMaterial
@@ -261,12 +262,12 @@ export class OptimizedMaterialManager {
                     if (texture) {
                         textures[textureType] = texture;
                     } else {
-                        console.warn(`Could not load ${textureType} texture: ${fullPath}`);
+                        logWarn(`Could not load ${textureType} texture: ${fullPath}`);
                     }
                 }
             }
         } catch (error) {
-            console.error(`Error loading textures for ${type}:`, error);
+            logError(`Error loading textures for ${type}:`, error);
         }
     
         return textures;
@@ -323,7 +324,7 @@ export class OptimizedMaterialManager {
         const materialClass = THREE[materialType];
         
         if (!materialClass) {
-            console.error(`Unknown material type: ${materialType}`);
+            logError(`Unknown material type: ${materialType}`);
             return sourceMaterial.clone(); // Fallback to simple clone
         }
         
@@ -348,7 +349,7 @@ export class OptimizedMaterialManager {
                         newMaterial[key] = sourceMaterial[key];
                     }
                 } catch (e) {
-                    console.warn(`Could not copy property ${key}:`, e);
+                    logWarn(`Could not copy property ${key}:`, e);
                 }
             }
         });
@@ -371,7 +372,7 @@ export class OptimizedMaterialManager {
         
         // Add debug log for mesh name
         if (this.debug) {
-            console.log(`Attempting to assign material to mesh: ${mesh.name}`);
+            logDebug(`Attempting to assign material to mesh: ${mesh.name}`);
         }
         
         // Find material type based on mesh name
@@ -379,13 +380,13 @@ export class OptimizedMaterialManager {
         
         if (!materialType || !materialSets.has(materialType)) {
             if (this.debug) {
-                console.warn(`No material type found for mesh: ${mesh.name}, materialType=${materialType}`);
+                logWarn(`No material type found for mesh: ${mesh.name}, materialType=${materialType}`);
             }
             return false;
         }
         
         if (this.debug) {
-            console.log(`Determined material type for mesh ${mesh.name}: ${materialType}`);
+            logDebug(`Determined material type for mesh ${mesh.name}: ${materialType}`);
         }
     
         const materialSet = materialSets.get(materialType);
@@ -397,7 +398,7 @@ export class OptimizedMaterialManager {
         const materialKey = `${materialType}_${meshFileName}`;
         
         if (this.debug) {
-            console.log(`Material key for ${mesh.name}: ${materialKey}`);
+            logDebug(`Material key for ${mesh.name}: ${materialKey}`);
             
             // Store mesh assignment for debugging
             this.meshAssignments.set(mesh.name, {
@@ -419,7 +420,7 @@ export class OptimizedMaterialManager {
             // Store this duplicate for future meshes from the same GLB file
             this.meshMaterials.set(materialKey, duplicateMaterial);
             
-            console.log(`🎨 Created duplicate material for ${materialKey}`);
+            logDebug(`🎨 Created duplicate material for ${materialKey}`);
         }
         
         // Assign the duplicate material to the mesh
@@ -438,7 +439,7 @@ export class OptimizedMaterialManager {
         if (mesh.userData && mesh.userData.fileName) {
             const fileName = this.cleanFileName(mesh.userData.fileName);
             if (this.debug) {
-                console.log(`Got filename from mesh.userData: ${mesh.userData.fileName} -> ${fileName}`);
+                logDebug(`Got filename from mesh.userData: ${mesh.userData.fileName} -> ${fileName}`);
             }
             return fileName;
         }
@@ -449,7 +450,7 @@ export class OptimizedMaterialManager {
             if (parent.userData && parent.userData.fileName) {
                 const fileName = this.cleanFileName(parent.userData.fileName);
                 if (this.debug) {
-                    console.log(`Got filename from parent.userData: ${parent.userData.fileName} -> ${fileName}`);
+                    logDebug(`Got filename from parent.userData: ${parent.userData.fileName} -> ${fileName}`);
                 }
                 return fileName;
             }
@@ -460,7 +461,7 @@ export class OptimizedMaterialManager {
         // Remove any numbers or special characters to get a clean part name
         const partName = mesh.name.replace(/[0-9_\.]/g, '').replace(/\s+/g, '-').toLowerCase();
         if (this.debug) {
-            console.log(`Falling back to partName from mesh.name: ${mesh.name} -> ${partName}`);
+            logDebug(`Falling back to partName from mesh.name: ${mesh.name} -> ${partName}`);
         }
         return partName || 'unknown';
     }
@@ -502,12 +503,12 @@ export class OptimizedMaterialManager {
         meshName = meshName.toLowerCase();
         
         if (this.debug) {
-            console.log(`Finding material type for mesh: ${meshName}`);
+            logDebug(`Finding material type for mesh: ${meshName}`);
         }
         
         for (const [type, patterns] of Object.entries(materialAssignments)) {
             if (this.debug) {
-                console.log(`Checking type: ${type} with patterns:`, patterns);
+                logDebug(`Checking type: ${type} with patterns:`, patterns);
             }
             
             if (patterns.some(pattern => {
@@ -516,7 +517,7 @@ export class OptimizedMaterialManager {
                 const isMatch = meshName.includes(patternLower);
                 
                 if (this.debug) {
-                    console.log(`  Pattern: ${patternLower}, isMatch: ${isMatch}`);
+                    logDebug(`  Pattern: ${patternLower}, isMatch: ${isMatch}`);
                 }
                 
                 return isMatch;
@@ -529,7 +530,7 @@ export class OptimizedMaterialManager {
     
     // Debug method to dump all mesh assignments
     dumpMeshAssignments() {
-        console.log("===== MESH MATERIAL ASSIGNMENTS =====");
+        logDebug("===== MESH MATERIAL ASSIGNMENTS =====");
         const assignments = {};
         
         this.meshAssignments.forEach((data, meshName) => {

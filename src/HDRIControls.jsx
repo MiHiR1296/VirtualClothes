@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 // HDRIControls.jsx
 import React, { useState } from 'react';
 import { RotateCw, Sun, Eye, EyeOff } from 'lucide-react';
@@ -49,7 +50,7 @@ const HDRIControls = ({
         setIntensity(defaultIntensity);
         
         // Explicitly pass the default intensity for this HDRI, not just the path
-        console.log(`Loading HDRI: ${hdriId} with intensity: ${defaultIntensity}`);
+        logDebug(`Loading HDRI: ${hdriId} with intensity: ${defaultIntensity}`);
         onHDRIChange(HDRI_OPTIONS[hdriId].path, defaultIntensity);
     };
 

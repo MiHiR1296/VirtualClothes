@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useState, useEffect, useRef } from 'react';
 import { FileDown, Loader, Download, Info, ScissorsSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTextureContext } from './TextureContext';
@@ -402,7 +403,7 @@ const TechPack = ({
         const viewHeight = viewWidth * 0.8;
         
         // Log available views for debugging
-        console.log("Available capture views:", capturesToUse.map(c => c.name));
+        logDebug("Available capture views:", capturesToUse.map(c => c.name));
         
         // Find different views with more flexible matching
         const frontView = capturesToUse.find(c => c.name === 'Front');
@@ -410,7 +411,7 @@ const TechPack = ({
         const backView = capturesToUse.find(c => c.name === 'Back');
         const sideView = capturesToUse.find(c => c.name === 'Side');
         
-        console.log("Found views:", { 
+        logDebug("Found views:", { 
           frontView: !!frontView, 
           threeQuarterView: !!threeQuarterView,
           backView: !!backView,
@@ -447,7 +448,7 @@ const TechPack = ({
         
         // If we don't have all views, try a fallback arrangement
         if (!frontView || !threeQuarterView || !backView || !sideView) {
-          console.log("Using fallback view arrangement");
+          logDebug("Using fallback view arrangement");
           // Fallback: just use the captures we have, in order
           const viewsPerRow = 2;
           const capturesArray = [...capturesToUse];
@@ -721,7 +722,7 @@ const TechPack = ({
       doc.save(`${modelName}_TechPack_${styleDate.replace(/\//g, '-')}.pdf`);
       
     } catch (error) {
-      console.error('Error generating techpack:', error);
+      logError('Error generating techpack:', error);
       alert('Error generating techpack. Please try again.');
     } finally {
       setIsGenerating(false);

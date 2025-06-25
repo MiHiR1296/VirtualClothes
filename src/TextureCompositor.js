@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import * as THREE from 'three';
 import { materialTypes, NORMAL_MAP_PATHS } from './MaterialTypeSelect';
 
@@ -96,10 +97,10 @@ export class TextureCompositor {
                     
                     // Convert the key to lowercase to match materialType values
                     this.loadedNormalMaps.set(materialType.toLowerCase(), normalMap);
-                    console.log(`Loaded normal map for ${materialType}`);
-                    console.log('Available normal maps:', Array.from(this.loadedNormalMaps.keys()));
+                    logDebug(`Loaded normal map for ${materialType}`);
+                    logDebug('Available normal maps:', Array.from(this.loadedNormalMaps.keys()));
                 } catch (error) {
-                    console.error(`Failed to load normal map for ${materialType}:`, error);
+                    logError(`Failed to load normal map for ${materialType}:`, error);
                 }
             }
         }
@@ -152,7 +153,7 @@ export class TextureCompositor {
                     });
 
                     this.originalMaterials.set(object.name, originalMaterial);
-                    console.log(`Stored original material for ${object.name}`);
+                    logDebug(`Stored original material for ${object.name}`);
                 }
             }
     
@@ -495,10 +496,10 @@ export class TextureCompositor {
             object.renderOrder = 1;
     
             // Log success
-            console.log(`Updated material for ${object.name} with ${applicableLayers.length} layer(s)`);
+            logDebug(`Updated material for ${object.name} with ${applicableLayers.length} layer(s)`);
     
         } catch (error) {
-            console.error('Error updating material:', error);
+            logError('Error updating material:', error);
         }
     }
 
@@ -507,7 +508,7 @@ export class TextureCompositor {
     createRepeatingTextureMaterial(object, layer, allLayers, outsideMaterial, envMap) {
         try {
             if (!layer || !layer.texture) {
-                console.warn('Cannot create repeating texture without a valid texture');
+                logWarn('Cannot create repeating texture without a valid texture');
                 return;
             }
             
@@ -666,7 +667,7 @@ export class TextureCompositor {
             object.material.needsUpdate = true;
             object.renderOrder = 1;
             
-            console.log(`Applied repeating texture to ${object.name}:`, {
+            logDebug(`Applied repeating texture to ${object.name}:`, {
                 scale: transformations.scale,
                 repeatFactor,
                 offset: transformations.offset,
@@ -676,7 +677,7 @@ export class TextureCompositor {
             });
             
         } catch (error) {
-            console.error('Error creating repeating texture material:', error);
+            logError('Error creating repeating texture material:', error);
         }
     }
     findOutsideMaterial() {
@@ -740,11 +741,11 @@ export class TextureCompositor {
         // Clear or restore original materials
         if (preserveOriginalMaterials && originalMaterialsBackup) {
             // Just keep the original materials
-            console.log("Preserving original materials during reset");
+            logDebug("Preserving original materials during reset");
         } else {
             // Complete reset
             this.originalMaterials.clear();
-            console.log("Complete reset of texture compositor state");
+            logDebug("Complete reset of texture compositor state");
         }
         
         // Restore original materials if requested

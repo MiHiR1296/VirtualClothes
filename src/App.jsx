@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useRef, useEffect, useState } from 'react';
 import { Layers, Palette, Settings, Move, Menu, ChevronRight } from 'lucide-react';
 import { ThreeApplication } from './ThreeApplication';
@@ -63,7 +64,7 @@ window.colorManager = {
       
       // Log only when debug is enabled
       if (window.DEBUG_COLOR_MANAGER) {
-        console.log(`Applied stored color ${object.userData.exactColor} to ${object.name}`);
+        logDebug(`Applied stored color ${object.userData.exactColor} to ${object.name}`);
       }
       return true;
     }
@@ -106,7 +107,7 @@ window.colorManager = {
     
     // Log only when debug is enabled
     if (window.DEBUG_COLOR_MANAGER) {
-      console.log(`Stored and applied color ${colorValue} to ${object.name}`);
+      logDebug(`Stored and applied color ${colorValue} to ${object.name}`);
     }
     return true;
   },
@@ -196,7 +197,7 @@ export default function App() {
             setSelectedModelRoughness(presetRoughness);
             setSelectedModelMetalness(presetMetalness);
             
-            console.log(`Material set to preset values: roughness=${presetRoughness}, metalness=${presetMetalness}`);
+            logDebug(`Material set to preset values: roughness=${presetRoughness}, metalness=${presetMetalness}`);
           }
         };
         
@@ -205,7 +206,7 @@ export default function App() {
           window.MODEL_PATHS = module.MODEL_PATHS;
         });
       } catch (error) {
-        console.error('Failed to initialize application:', error);
+        logError('Failed to initialize application:', error);
       }
     };
 
@@ -280,7 +281,7 @@ export default function App() {
       }
     });
     
-    console.log("Applied preset material properties to all model parts");
+    logDebug("Applied preset material properties to all model parts");
   };
 
   const handleModelChange = async (e) => {
@@ -308,7 +309,7 @@ export default function App() {
         applyPresetsToAllParts();
       }, 500); // Short delay to ensure model is fully loaded
     } catch (error) {
-      console.error('Error loading model:', error);
+      logError('Error loading model:', error);
     } finally {
       setIsLoading(false);
     }

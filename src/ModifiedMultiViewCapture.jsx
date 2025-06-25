@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useState, forwardRef, useImperativeHandle, useEffect, useRef } from 'react';
 import { View, RotateCw, Download, ZoomIn, Camera } from 'lucide-react';
 import * as THREE from 'three';
@@ -52,7 +53,7 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
         renderer.render(scene, camera);
       }
     } catch (error) {
-      console.error('Error previewing view:', error);
+      logError('Error previewing view:', error);
     }
   };
   
@@ -77,7 +78,7 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
     });
     
     if (!modelGroup) {
-      console.warn("Model group not found, using entire scene");
+      logWarn("Model group not found, using entire scene");
       modelGroup = scene;
     }
     
@@ -160,7 +161,7 @@ const ModifiedMultiViewCapture = forwardRef(({ scene, camera, renderer, controls
       return newCaptures; // Return captures for direct use
       
     } catch (error) {
-      console.error('Error capturing views:', error);
+      logError('Error capturing views:', error);
       return [];
     } finally {
       setIsCapturing(false);

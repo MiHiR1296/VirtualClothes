@@ -1,3 +1,4 @@
+import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Plus, Layers, RefreshCw } from 'lucide-react';
 import LayerItem from './LayerItem';
@@ -29,7 +30,7 @@ const extractTextureMeshParts = () => {
     const textureObjects = window.findTextureObjects?.() || [];
     
     if (textureObjects.length === 0) {
-        console.warn("No texture mesh objects found in the scene");
+        logWarn("No texture mesh objects found in the scene");
         return ["No texture meshes found"];
     }
     
@@ -63,7 +64,7 @@ const extractTextureMeshParts = () => {
         }
     });
     
-    console.log("Extracted texture mesh parts:", textureMeshParts);
+    logDebug("Extracted texture mesh parts:", textureMeshParts);
     
     // Return with a fallback if nothing found
     if (textureMeshParts.length === 0) {
@@ -96,16 +97,16 @@ export default function TextureLayerManager() {
 
     // Full texture refresh logic extracted for reuse
     const refreshTextureForParts = useCallback(() => {
-        console.log('Performing full texture refresh');
+        logDebug('Performing full texture refresh');
 
         // Get all texture objects from the scene
         const textureObjects = window.findTextureObjects?.() || [];
         if (textureObjects.length === 0) {
-          console.warn('No texture objects found');
+          logWarn('No texture objects found');
           return;
         }
 
-        console.log(`Updating textures for ${textureObjects.length} objects with ${layers.length} layers`);
+        logDebug(`Updating textures for ${textureObjects.length} objects with ${layers.length} layers`);
 
         // First explicitly reset materials to ensure proper visibility
         // THIS IS THE KEY STEP THAT MAKES IT WORK LIKE ADDING A NEW LAYER
@@ -122,7 +123,7 @@ export default function TextureLayerManager() {
         // Get the compositor instance
         const compositor = compositorRef.current;
         if (!compositor) {
-          console.warn('TextureCompositor instance not found');
+          logWarn('TextureCompositor instance not found');
           return;
         }
 
@@ -150,7 +151,7 @@ export default function TextureLayerManager() {
             // Now apply the texture layers to this clean material
             compositor.updateMaterial(object, currentLayers);
           } catch (error) {
-            console.error('Error updating material for object:', object.name, error);
+            logError('Error updating material for object:', object.name, error);
           }
         });
 
@@ -258,7 +259,7 @@ export default function TextureLayerManager() {
                 
                 // Update texture mesh parts
                 const parts = extractTextureMeshParts();
-                console.log('Model changed, extracted texture parts:', parts);
+                logDebug('Model changed, extracted texture parts:', parts);
                 setTextureMeshParts(parts);
                 
                 // Force re-render of component
@@ -270,7 +271,7 @@ export default function TextureLayerManager() {
             
             // Initial parts extraction
             const initialParts = extractTextureMeshParts();
-            console.log('Initial texture parts:', initialParts);
+            logDebug('Initial texture parts:', initialParts);
             setTextureMeshParts(initialParts);
             
             // Clean up on unmount
@@ -287,7 +288,7 @@ export default function TextureLayerManager() {
     // Update when refresh is triggered
     useEffect(() => {
         // This effect runs when refreshTrigger changes
-        console.log('Refreshing layer manager with updated parts:', textureMeshParts);
+        logDebug('Refreshing layer manager with updated parts:', textureMeshParts);
     }, [refreshTrigger, textureMeshParts]);
 
     // Update materials whenever layers change - Note: updateMaterials is now defined before this
@@ -296,7 +297,7 @@ export default function TextureLayerManager() {
         const shouldUpdateMaterials = layers.some(layer => layer.texture || layer.materialType !== 'base');
         
         if (shouldUpdateMaterials) {
-            console.log('Layers changed, updating materials');
+            logDebug('Layers changed, updating materials');
             updateMaterials();
             scheduleRefresh();
         }
@@ -376,7 +377,7 @@ export default function TextureLayerManager() {
             setRefreshTrigger(prev => prev + 1);
 
         } catch (error) {
-            console.error('Error loading texture:', error);
+            logError('Error loading texture:', error);
         }
     }, [setLayers, updateMaterials]);
 
