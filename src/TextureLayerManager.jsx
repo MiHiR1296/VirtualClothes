@@ -9,7 +9,7 @@ import { TextureCompositor } from './TextureCompositor';
 
 // Delay used for debounced texture refreshes (in milliseconds).
 // Increase this value if heavy textures are causing early refreshes.
-export const REFRESH_DELAY_MS = 200;
+export const REFRESH_DELAY_MS = 150;
 
 const DEFAULT_TRANSFORMATIONS = {
     offset: { x: 0, y: 0 },
