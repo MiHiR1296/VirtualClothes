@@ -10,6 +10,7 @@ export class TextureCompositor {
         this.scene = null; // Will be set on first use
         this.originalMaterials = new Map(); // Store original materials by object name
         this.appliedLayersByObject = new Map(); // Track which layers are applied to which objects
+        this.createdMaterials = new Set(); // Track materials created by updateMaterial
         this.loadNormalMapsForMaterialTypes();
     }
 
@@ -68,9 +69,28 @@ export class TextureCompositor {
     
             // Store original material if not already stored
             if (!this.originalMaterials.has(object.name)) {
-                // Clone the original material to preserve it
                 if (object.material) {
                     const originalMaterial = object.material.clone();
+
+                    // Clone any existing textures so they remain valid even if
+                    // the original material is later disposed
+                    const textureProps = [
+                        'map',
+                        'normalMap',
+                        'roughnessMap',
+                        'metalnessMap',
+                        'aoMap',
+                        'emissiveMap',
+                        'alphaMap',
+                        'bumpMap'
+                    ];
+
+                    textureProps.forEach(prop => {
+                        if (object.material[prop]) {
+                            originalMaterial[prop] = object.material[prop].clone();
+                        }
+                    });
+
                     this.originalMaterials.set(object.name, originalMaterial);
                     console.log(`Stored original material for ${object.name}`);
                 }
@@ -157,9 +177,10 @@ export class TextureCompositor {
                 const originalMaterial = this.originalMaterials.get(object.name);
                 
                 if (originalMaterial) {
-                    // Clean up current material if it exists
-                    if (object.material) {
+                    // Clean up current material if it exists and was created by this compositor
+                    if (object.material && this.createdMaterials.has(object.material)) {
                         object.material.dispose();
+                        this.createdMaterials.delete(object.material);
                     }
                     
                     // Clone the original material but make it transparent
@@ -168,8 +189,9 @@ export class TextureCompositor {
                     invisibleMaterial.opacity = 0;
                     invisibleMaterial.depthWrite = false;  // Don't write to depth buffer
                     invisibleMaterial.needsUpdate = true;
-                    
+
                     object.material = invisibleMaterial;
+                    this.createdMaterials.add(invisibleMaterial);
                 } else {
                     // Create a completely transparent material if no original
                     if (object.material) {
@@ -338,15 +360,16 @@ export class TextureCompositor {
                 };
     
             // Create new material with the composed texture
-            const newMaterial = new THREE.MeshPhysicalMaterial({
-                map: texture,
-                ...baseProperties,
-                transparent: true,
-                side: THREE.FrontSide,
-                depthWrite: true,
-                depthTest: true,
-                alphaTest: 0.1
-            });
+        const newMaterial = new THREE.MeshPhysicalMaterial({
+            map: texture,
+            ...baseProperties,
+            transparent: true,
+            side: THREE.FrontSide,
+            depthWrite: true,
+            depthTest: true,
+            alphaTest: 0.1
+        });
+        this.createdMaterials.add(newMaterial);
     
             // Copy environment map settings from the scene
             if (envMap) {
@@ -405,11 +428,18 @@ export class TextureCompositor {
             }
         }
     
-            // Clean up old material if different
-            if (object.material && object.material !== newMaterial) {
+            // Clean up old material if different and managed by this compositor
+            const originalMaterial = this.originalMaterials.get(object.name);
+            if (
+                object.material &&
+                object.material !== newMaterial &&
+                object.material !== originalMaterial &&
+                this.createdMaterials.has(object.material)
+            ) {
                 object.material.dispose();
+                this.createdMaterials.delete(object.material);
             }
-    
+
             // Apply new material
             object.material = newMaterial;
             object.material.needsUpdate = true;
@@ -537,6 +567,7 @@ export class TextureCompositor {
                 depthTest: true,
                 alphaTest: 0.1
             });
+            this.createdMaterials.add(newMaterial);
             
             // Apply opacity from the layer
             newMaterial.opacity = layer.opacity || 1;
@@ -571,10 +602,17 @@ export class TextureCompositor {
                     console.log(`Applied normal map for material type ${materialTypeName} to repeating texture`);
                 }
             
-            // Clean up old material if different
-            if (object.material && object.material !== newMaterial) {
-                object.material.dispose();
-            }
+        // Clean up old material if different and managed by this compositor
+        const originalMaterial = this.originalMaterials.get(object.name);
+        if (
+            object.material &&
+            object.material !== newMaterial &&
+            object.material !== originalMaterial &&
+            this.createdMaterials.has(object.material)
+        ) {
+            object.material.dispose();
+            this.createdMaterials.delete(object.material);
+        }
             
             // Apply new material
             object.material = newMaterial;
@@ -647,6 +685,10 @@ export class TextureCompositor {
         
         // Clear tracking maps
         this.appliedLayersByObject.clear();
+
+        // Dispose of materials created by this compositor
+        this.createdMaterials.forEach(mat => mat.dispose());
+        this.createdMaterials.clear();
         
         // Clear or restore original materials
         if (preserveOriginalMaterials && originalMaterialsBackup) {
