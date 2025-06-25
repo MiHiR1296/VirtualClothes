@@ -41,6 +41,7 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
             // If a model directory is provided, check model-specific path
             if (modelDirectory) {
                 const cleanModelDir = modelDirectory
+                    .replace(/^\.\//, '')         // Remove leading './'
                     .replace(/^Models\//, '')      // Remove leading 'Models/'
                     .replace(/\/Textures$/, '')    // Remove trailing '/Textures'
                     .replace(/\/+$/, '');          // Remove any trailing slashes
@@ -71,6 +72,7 @@ export const getTexturePath = (texturePath, modelDirectory = '') => {
     // If a model directory is provided, construct model-specific texture path
     if (modelDirectory) {
         const cleanModelDir = modelDirectory
+            .replace(/^\.\//, '')         // Remove leading './'
             .replace(/^Models\//, '')      // Remove leading 'Models/'
             .replace(/\/Textures$/, '')    // Remove trailing '/Textures'
             .replace(/\/+$/, '');          // Remove any trailing slashes
