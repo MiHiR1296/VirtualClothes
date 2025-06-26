@@ -22,6 +22,13 @@ const FABRIC_OPTIONS = {
     { value: 'cotton_95_lycra5', label: '95% Cotton, 5% Lycra, (290 g/m2)' },
     { value: 'cotton_60_poly40', label: '60% Cotton, 40% Polyester, (175 g/m2)' },
     { value: 'cotton_57_modal38_spandex5', label: '57% Cotton, 38% Modal, 5% Spandex, (275 g/m2)' }
+  ],
+  men_round_hs: [
+    { value: 'default', label: 'Default' },
+    { value: 'cotton_100', label: '100% Cotton, (180 g/m2)' },
+    { value: 'cotton_95_lycra5', label: '95% Cotton, 5% Lycra, (290 g/m2)' },
+    { value: 'cotton_60_poly40', label: '60% Cotton, 40% Polyester, (175 g/m2)' },
+    { value: 'cotton_57_modal38_spandex5', label: '57% Cotton, 38% Modal, 5% Spandex, (275 g/m2)' }
   ]
 };
 
@@ -32,6 +39,13 @@ const MODEL_VARIANTS = {
     cotton_95_lycra5: 'men_polo_hs_2',
     cotton_60_poly40: 'men_polo_hs_3',
     cotton_57_modal38_spandex5: 'men_polo_hs_4'
+  },
+  men_round_hs: {
+    default: 'men_round_hs',
+    cotton_100: 'men_round_hs_1',
+    cotton_95_lycra5: 'men_round_hs_2',
+    cotton_60_poly40: 'men_round_hs_3',
+    cotton_57_modal38_spandex5: 'men_round_hs_4'
   }
 };
 

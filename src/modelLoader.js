@@ -86,7 +86,67 @@ export const MODEL_PATHS = {
         'thread': ['button-stitches'],
     }
   },
-    'men_round_hs': {
+  'men_round_hs_1': {
+    hidden: true,
+    name: "Men's Round Neck Half Sleeve 1",
+    directory: 'Models/Men_RoundNeck_T-shirt_HS/RN_TS_HS_1',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Collar_L.glb', 'Collar_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside' ],
+    materialAssignments: {
+        'inside': ['inside', 'collar_l','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_u'],
+
+    }
+  },
+  'men_round_hs_2': {
+    hidden: true,
+    name: "Men's Round Neck Half Sleeve 2",
+    directory: 'Models/Men_RoundNeck_T-shirt_HS/RN_TS_HS_2',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Collar_L.glb', 'Collar_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside' ],
+    materialAssignments: {
+        'inside': ['inside', 'collar_l','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_u'],
+
+    }
+  },
+  'men_round_hs_3': {
+    hidden: true,
+    name: "Men's Round Neck Half Sleeve 3",
+    directory: 'Models/Men_RoundNeck_T-shirt_HS/RN_TS_HS_3',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Collar_L.glb', 'Collar_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside' ],
+    materialAssignments: {
+        'inside': ['inside', 'collar_l','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_u'],
+
+    }
+  },
+  'men_round_hs_4': {
+    hidden: true,
+    name: "Men's Round Neck Half Sleeve 4",
+    directory: 'Models/Men_RoundNeck_T-shirt_HS/RN_TS_HS_4',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Collar_L.glb', 'Collar_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside' ],
+    materialAssignments: {
+        'inside': ['inside', 'collar_l','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_u'],
+
+    }
+  },
+  'men_round_hs': {
         name: "Men's Round Neck Half Sleeve",
         directory: 'Models/Men_RoundNeck_T-shirt_HS',
         materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Collar_L.glb', 'Collar_U.glb'],
