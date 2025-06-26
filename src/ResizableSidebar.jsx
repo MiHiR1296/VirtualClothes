@@ -59,9 +59,9 @@ const ResizableSidebar = ({ children, isOpen }) => {
   return (
     <div 
       ref={sidebarRef}
-      className={`fixed right-0 top-14 bottom-0 bg-gray-800 border-l border-gray-700 
-                  transform transition-transform duration-300 ease-in-out z-10 
-                  ${isOpen ? 'translate-x-0' : 'translate-x-full'} 
+      className={`fixed right-0 top-14 bottom-0 glass backdrop-blur-md border-l border-white/20
+                  transform transition-transform duration-300 ease-in-out z-10
+                  ${isOpen ? 'translate-x-0' : 'translate-x-full'}
                   overflow-y-auto overflow-x-hidden`}
       style={{ 
         width: isOpen ? Math.max(width, 300) : 0,
