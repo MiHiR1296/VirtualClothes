@@ -23,6 +23,7 @@ export const MODEL_PATHS = {
     }
   },
   'men_polo_hs_1': {
+    hidden: true,
     name: "Men's Polo Half Sleeve 1",
     directory: 'Models/Men_Polo_shirt_HS/Polo_HS_1',
     materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
@@ -38,6 +39,7 @@ export const MODEL_PATHS = {
     }
   },
   'men_polo_hs_2': {
+    hidden: true,
     name: "Men's Polo Half Sleeve 2",
     directory: 'Models/Men_Polo_shirt_HS/Polo_HS_2',
     materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
@@ -53,6 +55,7 @@ export const MODEL_PATHS = {
     }
   },
   'men_polo_hs_3': {
+    hidden: true,
     name: "Men's Polo Half Sleeve 3",
     directory: 'Models/Men_Polo_shirt_HS/Polo_HS_3',
     materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
@@ -68,6 +71,7 @@ export const MODEL_PATHS = {
     }
   },
   'men_polo_hs_4': {
+    hidden: true,
     name: "Men's Polo Half Sleeve 4",
     directory: 'Models/Men_Polo_shirt_HS/Polo_HS_4',
     materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
@@ -162,8 +166,10 @@ export const MODEL_PATHS = {
 
 export const getModelsByCategory = () => {
     const categories = {};
-    
+
     Object.entries(MODEL_PATHS).forEach(([id, model]) => {
+        if (model.hidden) return;
+
         const category = model.category || 'other';
         if (!categories[category]) {
             categories[category] = [];

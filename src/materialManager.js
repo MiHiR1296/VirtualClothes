@@ -11,6 +11,70 @@ export class MaterialManager {
         
         // Combined material presets
         this.materialPresets = {
+            cotton: {
+                name: 'Cotton',
+                baseColor: 0xffffff,
+                roughness: 1,
+                metalness: 0.0,
+                normalScale: 1,
+                sheen: 0.02,
+                sheenRoughness: 0.8,
+                clearcoat: 0.0,
+                transmission: 0.0,
+                textureSettings: {
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
+                    rotation: 0
+                },
+                texturePaths: {
+                    normalMap: 'cotton/normal',
+                    aoMap: 'cotton/ao',
+                    diffuseMap: 'cotton/diffuse'
+                }
+            },
+            nylon: {
+                name: 'Nylon',
+                baseColor: 0xffffff,
+                roughness: 0.98,
+                metalness: 0.0,
+                normalScale: 1,
+                sheen: 0.3,
+                clearcoat: 0.0,
+                transmission: 0.0,
+                texturePaths: {
+                    normalMap: 'nylon/normal',
+                    roughnessMap: 'nylon/roughness',
+                    aoMap: 'nylon/ao',
+                    diffuseMap: 'nylon/diffuse'
+                },
+                textureSettings: {
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
+                    rotation: 0
+                },
+            },
+            leather: {
+                name: 'Leather',
+                baseColor: 0xffffff,
+                roughness: 0.7,
+                metalness: 0.0,
+                normalScale: 1,
+                sheen: 0.05,
+                sheenRoughness: 0.4,
+                clearcoat: 0.5,
+                clearcoatRoughness: 0.4,
+                textureSettings: {
+                    scale: 2.0,
+                    offset: { x: 0, y: 0.2 },
+                    rotation: 0
+                },
+                texturePaths: {
+                    normalMap: 'leather/normal',
+                    roughnessMap: 'leather/roughness',
+                    aoMap: 'leather/ao',
+                    diffuseMap: 'leather/diffuse'
+                }
+            },
             cotton_100: {
                 name: '100% Cotton (180 g/m2)',
                 baseColor: 0xffffff,

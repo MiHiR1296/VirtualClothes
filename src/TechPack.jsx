@@ -116,6 +116,27 @@ const trimSpecifications = {
 // Get fabric specifications by material type
 const getFabricSpecifications = (materialType) => {
   const materialSpecs = {
+    'cotton': {
+      composition: '100% Cotton',
+      weight: '243 g/m²',
+      type: 'Interlock',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
+    'nylon': {
+      composition: '100% Nylon',
+      weight: '120 g/m²',
+      type: 'Ripstop',
+      care: 'Machine wash cold, hang dry',
+      shrinkage: '1-2%'
+    },
+    'leather': {
+      composition: 'Genuine Leather',
+      weight: '1.2mm thickness',
+      type: 'Full grain',
+      care: 'Wipe clean with damp cloth',
+      shrinkage: 'None'
+    },
     'cotton_100': {
       composition: '100% Cotton',
       weight: '180 g/m²',
@@ -160,7 +181,7 @@ const getFabricSpecifications = (materialType) => {
     }
   };
   
-  return materialSpecs[materialType] || materialSpecs['cotton_100'];
+  return materialSpecs[materialType] || materialSpecs['cotton'];
 };
 
 const getNearestPantone = (hexColor) => {

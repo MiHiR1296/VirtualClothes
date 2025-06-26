@@ -60,6 +60,27 @@ const MaterialSpecs = ({ scene, selectedMaterial }) => {
   const getMaterialProperties = () => {
     // Material properties based on selected material
     switch (selectedMaterial) {
+      case 'cotton':
+        return {
+          composition: '100% Cotton',
+          weight: '180 GSM',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
+      case 'nylon':
+        return {
+          composition: '100% Nylon',
+          weight: '120 GSM',
+          care: 'Machine wash cold, hang dry',
+          shrinkage: '1-2%'
+        };
+      case 'leather':
+        return {
+          composition: 'Genuine Leather',
+          weight: '1.2mm thickness',
+          care: 'Wipe clean with damp cloth',
+          shrinkage: 'None'
+        };
       case 'cotton_100':
         return {
           composition: '100% Cotton',

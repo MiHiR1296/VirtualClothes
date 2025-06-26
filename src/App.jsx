@@ -7,6 +7,35 @@ import TextureLayerManager from './TextureLayerManager';
 import UVEditorContainer from './UVEditorContainer';
 import ControlsTooltip from './ControlsTooltip';
 import { getModelsByCategory } from './modelLoader';
+
+const FABRIC_OPTIONS = {
+  default: [
+    { value: 'cotton', label: 'Cotton' },
+    { value: 'nylon', label: 'Nylon' },
+    { value: 'leather', label: 'Leather' },
+    { value: 'metal', label: 'Metal' },
+    { value: 'plastic', label: 'Plastic' }
+  ],
+  men_polo_hs: [
+    { value: 'cotton_100', label: '100% Cotton, (180 g/m2)' },
+    { value: 'cotton_95_lycra5', label: '95% Cotton, 5% Lycra, (290 g/m2)' },
+    { value: 'cotton_60_poly40', label: '60% Cotton, 40% Polyester, (175 g/m2)' },
+    { value: 'cotton_57_modal38_spandex5', label: '57% Cotton, 38% Modal, 5% Spandex, (275 g/m2)' }
+  ]
+};
+
+const MODEL_VARIANTS = {
+  men_polo_hs: {
+    cotton_100: 'men_polo_hs_1',
+    cotton_95_lycra5: 'men_polo_hs_2',
+    cotton_60_poly40: 'men_polo_hs_3',
+    cotton_57_modal38_spandex5: 'men_polo_hs_4'
+  }
+};
+
+const getDefaultFabric = (modelId) => {
+  return FABRIC_OPTIONS[modelId]?.[0].value || FABRIC_OPTIONS.default[0].value;
+};
 import HDRIControls from './HDRIControls';
 import TechPack from './TechPack';
 import PantoneColorPicker from './PantoneColorPicker';
@@ -137,7 +166,7 @@ export default function App() {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState('men_polo_hs');
-  const [selectedMaterial, setSelectedMaterial] = useState('cotton_100');
+  const [selectedMaterial, setSelectedMaterial] = useState(getDefaultFabric('men_polo_hs'));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedModelRoughness, setSelectedModelRoughness] = useState(1.0);
   const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.05);
@@ -291,8 +320,12 @@ export default function App() {
       setIsLoading(true);
       const modelId = e.target.value;
       setSelectedModel(modelId);
-      
-      await appRef.current.loadModel(modelId);
+
+      const defaultMat = getDefaultFabric(modelId);
+      setSelectedMaterial(defaultMat);
+      const variant = MODEL_VARIANTS[modelId]?.[defaultMat] || modelId;
+
+      await appRef.current.loadModel(variant);
 
       // Apply preset material values after model loads
       setTimeout(() => {
@@ -318,6 +351,25 @@ export default function App() {
   const handleMaterialChange = async (e) => {
     const newMaterial = e.target.value;
     setSelectedMaterial(newMaterial);
+    if (selectedModel in MODEL_VARIANTS && MODEL_VARIANTS[selectedModel][newMaterial]) {
+      if (!appRef.current) return;
+      try {
+        setIsLoading(true);
+        await appRef.current.loadModel(MODEL_VARIANTS[selectedModel][newMaterial]);
+        setTimeout(() => {
+          setSelectedModelRoughness(1.0);
+          setSelectedModelMetalness(0.05);
+          if (window.selectedModelPart) {
+            window.updateSelectedModelMaterial();
+          }
+          applyPresetsToAllParts();
+        }, 500);
+      } catch (error) {
+        logError('Error loading variant model:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     if (appRef.current?.materialManager) {
       appRef.current.materialManager.updateMaterial(newMaterial);
     }
@@ -399,12 +451,11 @@ export default function App() {
                 value={selectedMaterial}
                 onChange={handleMaterialChange}
               >
-                <option value="cotton_100">100% Cotton, (180 g/m2)</option>
-                <option value="cotton_95_lycra5">95% Cotton, 5% Lycra, (290 g/m2)</option>
-                <option value="cotton_60_poly40">60% Cotton, 40% Polyester, (175 g/m2)</option>
-                <option value="cotton_57_modal38_spandex5">57% Cotton, 38% Modal, 5% Spandex, (275 g/m2)</option>
-                <option value="metal">Metal</option>
-                <option value="plastic">Plastic</option>
+                {(FABRIC_OPTIONS[selectedModel] || FABRIC_OPTIONS.default).map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
 
