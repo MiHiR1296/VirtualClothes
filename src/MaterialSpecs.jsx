@@ -81,6 +81,41 @@ const MaterialSpecs = ({ scene, selectedMaterial }) => {
           care: 'Wipe clean with damp cloth',
           shrinkage: 'None'
         };
+      case 'default':
+        return {
+          composition: '100% Cotton',
+          weight: '180 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
+      case 'cotton_100':
+        return {
+          composition: '100% Cotton',
+          weight: '180 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
+      case 'cotton_95_lycra5':
+        return {
+          composition: '95% Cotton, 5% Lycra',
+          weight: '290 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
+      case 'cotton_60_poly40':
+        return {
+          composition: '60% Cotton, 40% Polyester',
+          weight: '175 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
+      case 'cotton_57_modal38_spandex5':
+        return {
+          composition: '57% Cotton, 38% Modal, 5% Spandex',
+          weight: '275 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
       case 'metal':
         return {
           composition: 'Zinc Alloy',

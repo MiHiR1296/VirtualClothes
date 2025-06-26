@@ -137,6 +137,41 @@ const getFabricSpecifications = (materialType) => {
       care: 'Wipe clean with damp cloth',
       shrinkage: 'None'
     },
+    'default': {
+      composition: '100% Cotton',
+      weight: '180 g/m²',
+      type: 'Interlock',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
+    'cotton_100': {
+      composition: '100% Cotton',
+      weight: '180 g/m²',
+      type: 'Interlock',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
+    'cotton_95_lycra5': {
+      composition: '95% Cotton, 5% Lycra',
+      weight: '290 g/m²',
+      type: 'Jersey',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
+    'cotton_60_poly40': {
+      composition: '60% Cotton, 40% Polyester',
+      weight: '175 g/m²',
+      type: 'Blend',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
+    'cotton_57_modal38_spandex5': {
+      composition: '57% Cotton, 38% Modal, 5% Spandex',
+      weight: '275 g/m²',
+      type: 'Stretch',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
     'metal': {
       composition: 'Zinc Alloy',
       weight: 'Medium',
@@ -344,7 +379,7 @@ const TechPack = ({
         ['BRAND:', '3D Garment'],
         ['ART', styleID],
         ['ART NAME:', modelData.name || selectedModel],
-        ['Fabric', selectedMaterial.charAt(0).toUpperCase() + selectedMaterial.slice(1)],
+        ['Fabric', materialSpecs[selectedMaterial]?.composition || selectedMaterial],
         ['DATE:', styleDate]
       ];
       
