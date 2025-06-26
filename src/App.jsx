@@ -269,9 +269,6 @@ export default function App() {
   useEffect(() => {
     const defaultMat = getDefaultFabric(selectedModel);
     setSelectedMaterial(defaultMat);
-    if (appRef.current?.materialManager) {
-      appRef.current.materialManager.updateMaterial(defaultMat);
-    }
   }, [selectedModel]);
 
   // Add an effect to watch for changes to the selection
@@ -351,9 +348,6 @@ export default function App() {
       const variant = MODEL_VARIANTS[modelId]?.[defaultMat] || modelId;
 
       await appRef.current.loadModel(variant);
-      if (appRef.current?.materialManager) {
-        appRef.current.materialManager.updateMaterial(defaultMat);
-      }
 
       // Apply preset material values after model loads
       setTimeout(() => {
@@ -399,9 +393,7 @@ export default function App() {
       setIsLoading(false);
     }
 
-    if (appRef.current?.materialManager) {
-      appRef.current.materialManager.updateMaterial(newMaterial);
-    }
+    // Material updates are handled by the loaded model's textures
   };
 
   const handleHDRIChange = (path, intensity) => {

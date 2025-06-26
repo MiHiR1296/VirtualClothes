@@ -182,11 +182,17 @@ export class ThreeApplication {
             if (this.modelLoader.loadedModelGroup) {
                 this.scene.remove(this.modelLoader.loadedModelGroup);
             }
-            
+
             // Stop any running animations
             if (this.modelLoader.modelControls) {
                 this.modelLoader.modelControls.clearMixers();
             }
+
+            // Dispose cached materials and textures so new models load correctly
+            if (this.materialManager) {
+                this.materialManager.dispose();
+            }
+            textureCache.clearCache();
         }
     }
 
