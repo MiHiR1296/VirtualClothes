@@ -343,9 +343,9 @@ export default function App() {
 
   return (
     <TextureProvider>
-      <div className="relative min-h-screen bg-gray-900 text-white">
+      <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
         {/* Top Navigation */}
-        <nav className="fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 z-20">
+        <nav className="fixed top-0 left-0 right-0 border-b border-white/20 glass backdrop-blur-md z-20">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             <h1 className="text-xl font-bold">3D Model Viewer</h1>
             <div className="flex items-center gap-4">
