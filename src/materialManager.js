@@ -179,7 +179,7 @@ export class MaterialManager {
             }
         };
 
-        this.initializeUI();
+        // UI initialization is handled in React; skip built-in dropdown
         this.updateLoadingLog('Material presets configured');
     }
 

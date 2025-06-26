@@ -249,6 +249,15 @@ export default function App() {
     };
   }, []);
 
+  // Ensure selected material matches the current garment
+  useEffect(() => {
+    const defaultMat = getDefaultFabric(selectedModel);
+    setSelectedMaterial(defaultMat);
+    if (appRef.current?.materialManager) {
+      appRef.current.materialManager.updateMaterial(defaultMat);
+    }
+  }, [selectedModel]);
+
   // Add an effect to watch for changes to the selection
   useEffect(() => {
     // Function to update the selection count
@@ -326,6 +335,9 @@ export default function App() {
       const variant = MODEL_VARIANTS[modelId]?.[defaultMat] || modelId;
 
       await appRef.current.loadModel(variant);
+      if (appRef.current?.materialManager) {
+        appRef.current.materialManager.updateMaterial(defaultMat);
+      }
 
       // Apply preset material values after model loads
       setTimeout(() => {
