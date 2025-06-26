@@ -192,7 +192,16 @@ export class ThreeApplication {
             if (this.materialManager) {
                 this.materialManager.dispose();
             }
+
+            if (this.modelLoader?.optimizedMaterialManager) {
+                this.modelLoader.optimizedMaterialManager.dispose();
+            }
+
             textureCache.clearCache();
+
+            if (this.loadedModels.has(this.currentModelId)) {
+                this.loadedModels.delete(this.currentModelId);
+            }
         }
     }
 
