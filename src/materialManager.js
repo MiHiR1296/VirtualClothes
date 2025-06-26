@@ -75,6 +75,27 @@ export class MaterialManager {
                     diffuseMap: 'leather/diffuse'
                 }
             },
+            default: {
+                name: 'Default Fabric',
+                baseColor: 0xffffff,
+                roughness: 1,
+                metalness: 0.0,
+                normalScale: 1,
+                sheen: 0.02,
+                sheenRoughness: 0.8,
+                clearcoat: 0.0,
+                transmission: 0.0,
+                textureSettings: {
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
+                    rotation: 0
+                },
+                texturePaths: {
+                    normalMap: 'cotton/normal',
+                    aoMap: 'cotton/ao',
+                    diffuseMap: 'cotton/diffuse'
+                }
+            },
             cotton_100: {
                 name: '100% Cotton (180 g/m2)',
                 baseColor: 0xffffff,

@@ -17,6 +17,7 @@ const FABRIC_OPTIONS = {
     { value: 'plastic', label: 'Plastic' }
   ],
   men_polo_hs: [
+    { value: 'default', label: 'Default' },
     { value: 'cotton_100', label: '100% Cotton, (180 g/m2)' },
     { value: 'cotton_95_lycra5', label: '95% Cotton, 5% Lycra, (290 g/m2)' },
     { value: 'cotton_60_poly40', label: '60% Cotton, 40% Polyester, (175 g/m2)' },
@@ -26,6 +27,7 @@ const FABRIC_OPTIONS = {
 
 const MODEL_VARIANTS = {
   men_polo_hs: {
+    default: 'men_polo_hs',
     cotton_100: 'men_polo_hs_1',
     cotton_95_lycra5: 'men_polo_hs_2',
     cotton_60_poly40: 'men_polo_hs_3',
@@ -363,25 +365,26 @@ export default function App() {
   const handleMaterialChange = async (e) => {
     const newMaterial = e.target.value;
     setSelectedMaterial(newMaterial);
-    if (selectedModel in MODEL_VARIANTS && MODEL_VARIANTS[selectedModel][newMaterial]) {
-      if (!appRef.current) return;
-      try {
-        setIsLoading(true);
-        await appRef.current.loadModel(MODEL_VARIANTS[selectedModel][newMaterial]);
-        setTimeout(() => {
-          setSelectedModelRoughness(1.0);
-          setSelectedModelMetalness(0.05);
-          if (window.selectedModelPart) {
-            window.updateSelectedModelMaterial();
-          }
-          applyPresetsToAllParts();
-        }, 500);
-      } catch (error) {
-        logError('Error loading variant model:', error);
-      } finally {
-        setIsLoading(false);
-      }
+
+    if (!appRef.current) return;
+    try {
+      setIsLoading(true);
+      const variant = MODEL_VARIANTS[selectedModel]?.[newMaterial] || selectedModel;
+      await appRef.current.loadModel(variant);
+      setTimeout(() => {
+        setSelectedModelRoughness(1.0);
+        setSelectedModelMetalness(0.05);
+        if (window.selectedModelPart) {
+          window.updateSelectedModelMaterial();
+        }
+        applyPresetsToAllParts();
+      }, 500);
+    } catch (error) {
+      logError('Error loading variant model:', error);
+    } finally {
+      setIsLoading(false);
     }
+
     if (appRef.current?.materialManager) {
       appRef.current.materialManager.updateMaterial(newMaterial);
     }

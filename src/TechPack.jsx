@@ -137,6 +137,13 @@ const getFabricSpecifications = (materialType) => {
       care: 'Wipe clean with damp cloth',
       shrinkage: 'None'
     },
+    'default': {
+      composition: '100% Cotton',
+      weight: '180 g/m²',
+      type: 'Interlock',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
     'cotton_100': {
       composition: '100% Cotton',
       weight: '180 g/m²',

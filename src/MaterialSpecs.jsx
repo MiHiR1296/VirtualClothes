@@ -81,6 +81,13 @@ const MaterialSpecs = ({ scene, selectedMaterial }) => {
           care: 'Wipe clean with damp cloth',
           shrinkage: 'None'
         };
+      case 'default':
+        return {
+          composition: '100% Cotton',
+          weight: '180 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
       case 'cotton_100':
         return {
           composition: '100% Cotton',
