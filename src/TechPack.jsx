@@ -116,26 +116,33 @@ const trimSpecifications = {
 // Get fabric specifications by material type
 const getFabricSpecifications = (materialType) => {
   const materialSpecs = {
-    'cotton': {
+    'cotton_100': {
       composition: '100% Cotton',
-      weight: '243 g/m²',
+      weight: '180 g/m²',
       type: 'Interlock',
       care: 'Machine wash cold, tumble dry low',
       shrinkage: '3-5%'
     },
-    'nylon': {
-      composition: '100% Nylon',
-      weight: '120 g/m²',
-      type: 'Ripstop',
-      care: 'Machine wash cold, hang dry',
-      shrinkage: '1-2%'
+    'cotton_95_lycra5': {
+      composition: '95% Cotton, 5% Lycra',
+      weight: '290 g/m²',
+      type: 'Jersey',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
     },
-    'leather': {
-      composition: 'Genuine Leather',
-      weight: '1.2mm thickness',
-      type: 'Full grain',
-      care: 'Wipe clean with damp cloth',
-      shrinkage: 'None'
+    'cotton_60_poly40': {
+      composition: '60% Cotton, 40% Polyester',
+      weight: '175 g/m²',
+      type: 'Blend',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
+    },
+    'cotton_57_modal38_spandex5': {
+      composition: '57% Cotton, 38% Modal, 5% Spandex',
+      weight: '275 g/m²',
+      type: 'Stretch',
+      care: 'Machine wash cold, tumble dry low',
+      shrinkage: '3-5%'
     },
     'metal': {
       composition: 'Zinc Alloy',
@@ -153,7 +160,7 @@ const getFabricSpecifications = (materialType) => {
     }
   };
   
-  return materialSpecs[materialType] || materialSpecs['cotton'];
+  return materialSpecs[materialType] || materialSpecs['cotton_100'];
 };
 
 const getNearestPantone = (hexColor) => {
@@ -344,7 +351,7 @@ const TechPack = ({
         ['BRAND:', '3D Garment'],
         ['ART', styleID],
         ['ART NAME:', modelData.name || selectedModel],
-        ['Fabric', selectedMaterial.charAt(0).toUpperCase() + selectedMaterial.slice(1)],
+        ['Fabric', materialSpecs[selectedMaterial]?.composition || selectedMaterial],
         ['DATE:', styleDate]
       ];
       

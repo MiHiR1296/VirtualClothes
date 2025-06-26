@@ -60,26 +60,33 @@ const MaterialSpecs = ({ scene, selectedMaterial }) => {
   const getMaterialProperties = () => {
     // Material properties based on selected material
     switch (selectedMaterial) {
-      case 'cotton':
+      case 'cotton_100':
         return {
           composition: '100% Cotton',
-          weight: '180 GSM',
+          weight: '180 g/m²',
           care: 'Machine wash cold, tumble dry low',
           shrinkage: '3-5%'
         };
-      case 'nylon':
+      case 'cotton_95_lycra5':
         return {
-          composition: '100% Nylon',
-          weight: '120 GSM',
-          care: 'Machine wash cold, hang dry',
-          shrinkage: '1-2%'
+          composition: '95% Cotton, 5% Lycra',
+          weight: '290 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
         };
-      case 'leather':
+      case 'cotton_60_poly40':
         return {
-          composition: 'Genuine Leather',
-          weight: '1.2mm thickness',
-          care: 'Wipe clean with damp cloth',
-          shrinkage: 'None'
+          composition: '60% Cotton, 40% Polyester',
+          weight: '175 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
+        };
+      case 'cotton_57_modal38_spandex5':
+        return {
+          composition: '57% Cotton, 38% Modal, 5% Spandex',
+          weight: '275 g/m²',
+          care: 'Machine wash cold, tumble dry low',
+          shrinkage: '3-5%'
         };
       case 'metal':
         return {

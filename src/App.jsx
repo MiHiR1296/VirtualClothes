@@ -137,7 +137,7 @@ export default function App() {
   const canvasRef = useRef(null);
   const appRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState('men_polo_hs');
-  const [selectedMaterial, setSelectedMaterial] = useState('cotton');
+  const [selectedMaterial, setSelectedMaterial] = useState('cotton_100');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedModelRoughness, setSelectedModelRoughness] = useState(1.0);
   const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.05);
@@ -388,20 +388,21 @@ export default function App() {
               />
             </div>
 
-            {/* Material Selection */}
+            {/* Fabric Selection */}
             <div>
               <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Palette className="w-4 h-4" /> Materials
+                <Palette className="w-4 h-4" /> Fabric Options
               </h2>
-              <select 
+              <select
                 id="materialSelect"
                 className="w-full bg-gray-700 rounded px-3 py-2 mb-3 border border-gray-600"
                 value={selectedMaterial}
                 onChange={handleMaterialChange}
               >
-                <option value="cotton">Cotton</option>
-                <option value="nylon">Nylon</option>
-                <option value="leather">Leather</option>
+                <option value="cotton_100">100% Cotton, (180 g/m2)</option>
+                <option value="cotton_95_lycra5">95% Cotton, 5% Lycra, (290 g/m2)</option>
+                <option value="cotton_60_poly40">60% Cotton, 40% Polyester, (175 g/m2)</option>
+                <option value="cotton_57_modal38_spandex5">57% Cotton, 38% Modal, 5% Spandex, (275 g/m2)</option>
                 <option value="metal">Metal</option>
                 <option value="plastic">Plastic</option>
               </select>

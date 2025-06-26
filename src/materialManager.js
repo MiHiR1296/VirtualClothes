@@ -11,8 +11,8 @@ export class MaterialManager {
         
         // Combined material presets
         this.materialPresets = {
-            cotton: {
-                name: 'Cotton',
+            cotton_100: {
+                name: '100% Cotton (180 g/m2)',
                 baseColor: 0xffffff,
                 roughness: 1,
                 metalness: 0.0,
@@ -32,47 +32,67 @@ export class MaterialManager {
                     diffuseMap: 'cotton/diffuse'
                 }
             },
-            nylon: {
-                name: 'Nylon',
+            cotton_95_lycra5: {
+                name: '95% Cotton, 5% Lycra (290 g/m2)',
                 baseColor: 0xffffff,
-                roughness: 0.98,
+                roughness: 1,
                 metalness: 0.0,
                 normalScale: 1,
-                sheen: 0.3,
+                sheen: 0.02,
+                sheenRoughness: 0.8,
                 clearcoat: 0.0,
                 transmission: 0.0,
-                texturePaths: {
-                    normalMap: 'nylon/normal',
-                    roughnessMap: 'nylon/roughness',
-                    aoMap: 'nylon/ao',
-                    diffuseMap: 'nylon/diffuse'
-                },
                 textureSettings: {
                     scale: 10.0,
                     offset: { x: 0, y: 0 },
                     rotation: 0
                 },
+                texturePaths: {
+                    normalMap: 'cotton/normal',
+                    aoMap: 'cotton/ao',
+                    diffuseMap: 'cotton/diffuse'
+                }
             },
-            leather: {
-                name: 'Leather',
+            cotton_60_poly40: {
+                name: '60% Cotton, 40% Polyester (175 g/m2)',
                 baseColor: 0xffffff,
-                roughness: 0.7,
+                roughness: 1,
                 metalness: 0.0,
                 normalScale: 1,
-                sheen: 0.05,
-                sheenRoughness: 0.4,
-                clearcoat: 0.5,
-                clearcoatRoughness: 0.4,
+                sheen: 0.02,
+                sheenRoughness: 0.8,
+                clearcoat: 0.0,
+                transmission: 0.0,
                 textureSettings: {
-                    scale: 2.0,
-                    offset: { x: 0, y: 0.2 },
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
                     rotation: 0
                 },
                 texturePaths: {
-                    normalMap: 'leather/normal',
-                    roughnessMap: 'leather/roughness',
-                    aoMap: 'leather/ao',
-                    diffuseMap: 'leather/diffuse'
+                    normalMap: 'cotton/normal',
+                    aoMap: 'cotton/ao',
+                    diffuseMap: 'cotton/diffuse'
+                }
+            },
+            cotton_57_modal38_spandex5: {
+                name: '57% Cotton, 38% Modal, 5% Spandex (275 g/m2)',
+                baseColor: 0xffffff,
+                roughness: 1,
+                metalness: 0.0,
+                normalScale: 1,
+                sheen: 0.02,
+                sheenRoughness: 0.8,
+                clearcoat: 0.0,
+                transmission: 0.0,
+                textureSettings: {
+                    scale: 10.0,
+                    offset: { x: 0, y: 0 },
+                    rotation: 0
+                },
+                texturePaths: {
+                    normalMap: 'cotton/normal',
+                    aoMap: 'cotton/ao',
+                    diffuseMap: 'cotton/diffuse'
                 }
             },
             metal: {

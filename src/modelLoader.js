@@ -21,7 +21,67 @@ export const MODEL_PATHS = {
         'button': ['buttons'],
         'thread': ['button-stitches'],
     }
-},
+  },
+  'men_polo_hs_1': {
+    name: "Men's Polo Half Sleeve 1",
+    directory: 'Models/Men_Polo_shirt_HS/Polo_HS_1',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside', 'button', 'thread'],
+    materialAssignments: {
+        'inside': ['inside', 'collar_u','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_l'],
+        'button': ['buttons'],
+        'thread': ['button-stitches'],
+    }
+  },
+  'men_polo_hs_2': {
+    name: "Men's Polo Half Sleeve 2",
+    directory: 'Models/Men_Polo_shirt_HS/Polo_HS_2',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside', 'button', 'thread'],
+    materialAssignments: {
+        'inside': ['inside', 'collar_u','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_l'],
+        'button': ['buttons'],
+        'thread': ['button-stitches'],
+    }
+  },
+  'men_polo_hs_3': {
+    name: "Men's Polo Half Sleeve 3",
+    directory: 'Models/Men_Polo_shirt_HS/Polo_HS_3',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside', 'button', 'thread'],
+    materialAssignments: {
+        'inside': ['inside', 'collar_u','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_l'],
+        'button': ['buttons'],
+        'thread': ['button-stitches'],
+    }
+  },
+  'men_polo_hs_4': {
+    name: "Men's Polo Half Sleeve 4",
+    directory: 'Models/Men_Polo_shirt_HS/Polo_HS_4',
+    materials: ['Fronttex.glb', 'Inside.glb', 'Back.glb', 'Front.glb', 'Sleeve_L.glb', 'Sleeve_R.glb', 'Buttons.glb', 'Button-Stitches.glb', 'Collar_L.glb', 'Collar_U.glb', 'Placket_I.glb','Placket_U.glb'],
+    useOptimizedMaterials: true,
+    hasAnimations: false,
+    category: "men",
+    materialTypes: ['inside', 'outside', 'button', 'thread'],
+    materialAssignments: {
+        'inside': ['inside', 'collar_u','placket_i'],
+        'outside': ['back', 'front', 'sleeve_l', 'sleeve_r', 'placket_u', 'collar_l'],
+        'button': ['buttons'],
+        'thread': ['button-stitches'],
+    }
+  },
     'men_round_hs': {
         name: "Men's Round Neck Half Sleeve",
         directory: 'Models/Men_RoundNeck_T-shirt_HS',
