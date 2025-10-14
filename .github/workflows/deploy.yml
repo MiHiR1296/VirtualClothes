@@ -2,65 +2,33 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - experimental  # or main/master depending on your workflow
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          lfs: true  # Important if you're using Git LFS for large files like textures
-          fetch-depth: 0  # Fetch full history for proper deployment
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci  # More strict than npm install
-
-      - name: Build
-        run: npm run build
-        env:
-          VITE_BASE_PATH: '/VirtualClothes/'  # Match this with your repo name
-
-      # Optional: Verification step to debug deployment issues
-      - name: List Build Output
-        run: |
-          echo "Contents of dist directory:"
-          ls -la dist
-          echo "Contents of dist/Textures directory (if exists):"
-          ls -la dist/Textures || echo "Textures directory not found"
-          echo "Contents of dist/assets directory:"
-          ls -la dist/assets || echo "Assets directory not found"
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'dist'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build
+      run: npm run build
+      
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/master'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
