@@ -59,14 +59,17 @@ const ResizableSidebar = ({ children, isOpen }) => {
   return (
     <div 
       ref={sidebarRef}
-      className={`fixed right-0 top-14 bottom-0 bg-gray-800 border-l border-gray-700 
-                  transform transition-transform duration-300 ease-in-out z-10 
+      className={`fixed right-0 top-20 bottom-0 professional-panel
+                  transform transition-all duration-200 z-10 
                   ${isOpen ? 'translate-x-0' : 'translate-x-full'} 
                   overflow-y-auto overflow-x-hidden`}
       style={{ 
         width: isOpen ? Math.max(width, 300) : 0,
         maxWidth: '70%',
-        minWidth: '300px'
+        minWidth: '300px',
+        margin: '16px',
+        marginTop: '0',
+        marginBottom: '0'
       }}
     >
       {/* Resizer */}
@@ -77,15 +80,15 @@ const ResizableSidebar = ({ children, isOpen }) => {
           setIsResizing(true);
         }}
         className="absolute left-0 top-0 bottom-0 cursor-col-resize 
-                   hover:bg-blue-500/30 transition-colors z-50"
+                   hover:bg-accent/20 transition-all duration-200 z-50"
         style={{ 
-          left: '-8px',  // Extend slightly outside for easier grabbing
-          width: '16px'  // Wider hit area
+          left: '-4px',  // Extend slightly outside for easier grabbing
+          width: '8px'  // Narrower hit area
         }}
       />
       
       {/* Sidebar Content */}
-      <div className="h-full overflow-y-auto p-6 space-y-6">
+      <div className="h-full overflow-y-auto p-4 space-y-4">
         {children}
       </div>
     </div>

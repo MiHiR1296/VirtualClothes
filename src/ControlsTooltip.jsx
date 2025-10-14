@@ -27,78 +27,82 @@ const ControlsTooltip = () => {
 
   const getKeyStyle = (key) => {
     return {
-      backgroundColor: activeKeys[key] ? 'rgb(59 130 246)' : 'transparent',
-      color: activeKeys[key] ? 'white' : 'rgb(209 213 219)',
-      padding: '2px 6px',
-      borderRadius: '4px',
-      border: '1px solid rgb(75 85 99)',
+      backgroundColor: activeKeys[key] ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255, 255, 255, 0.1)',
+      color: activeKeys[key] ? 'white' : 'rgba(255, 255, 255, 0.8)',
+      padding: '4px 8px',
+      borderRadius: '8px',
+      border: activeKeys[key] ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.2)',
       display: 'inline-block',
-      minWidth: '24px',
+      minWidth: '28px',
       textAlign: 'center',
       marginRight: '8px',
-      fontFamily: 'monospace'
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '12px',
+      fontWeight: '500',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)',
+      transition: 'all 0.3s ease'
     };
   };
 
   return (
-    <div className="absolute left-4 top-4 z-20">
+    <div className="absolute left-6 top-6 z-20">
       <button
         onClick={() => setIsVisible(!isVisible)}
-        className="bg-gray-800/90 p-2 rounded-lg hover:bg-gray-700/90 transition-colors"
+        className="glass-button p-3 hover:scale-105 transition-all duration-300"
         title={isVisible ? "Hide Controls" : "Show Controls"}
       >
         <HelpCircle className="w-5 h-5" />
       </button>
 
       {isVisible && (
-        <div className="absolute left-0 top-12 bg-gray-800/90 rounded-lg p-4 text-sm 
-                      shadow-lg border border-gray-700/50 min-w-[250px]">
-          <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-200">
-            <Move className="w-4 h-4" /> Camera Controls
+        <div className="absolute left-0 top-14 glass-card p-6 text-sm min-w-[280px]">
+          <h3 className="font-semibold mb-4 flex items-center gap-2 text-gradient">
+            <Move className="w-5 h-5" /> Camera Controls
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span>Move Forward</span>
+              <span className="text-white/80">Move Forward</span>
               <div>
                 <span style={getKeyStyle('w')}>W</span>
                 <span style={getKeyStyle('arrowup')}>↑</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span>Move Backward</span>
+              <span className="text-white/80">Move Backward</span>
               <div>
                 <span style={getKeyStyle('s')}>S</span>
                 <span style={getKeyStyle('arrowdown')}>↓</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span>Rotate Left</span>
+              <span className="text-white/80">Rotate Left</span>
               <div>
                 <span style={getKeyStyle('a')}>A</span>
                 <span style={getKeyStyle('arrowleft')}>←</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span>Rotate Right</span>
+              <span className="text-white/80">Rotate Right</span>
               <div>
                 <span style={getKeyStyle('d')}>D</span>
                 <span style={getKeyStyle('arrowright')}>→</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span>Move Up</span>
+              <span className="text-white/80">Move Up</span>
               <span style={getKeyStyle('q')}>Q</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Move Down</span>
+              <span className="text-white/80">Move Down</span>
               <span style={getKeyStyle('e')}>E</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Reset Camera</span>
+              <span className="text-white/80">Reset Camera</span>
               <span style={getKeyStyle('f')}>F</span>
             </div>
           </div>
-          <div className="mt-3 text-xs text-gray-400">
+          <div className="mt-4 text-xs text-white/60 border-t border-white/20 pt-3">
             You can also use the mouse to orbit, zoom, and pan
           </div>
         </div>

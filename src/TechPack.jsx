@@ -966,7 +966,7 @@ const TechPack = ({
   };
   
   return (
-    <div className="mt-6 border-t border-gray-700 pt-6">
+    <div className="mt-8 border-t border-white/20 pt-8">
       {/* Use the improved ModifiedMultiViewCapture for better zoomed-in captures first */}
       <ModifiedMultiViewCapture 
         ref={multiViewRef}
@@ -977,14 +977,14 @@ const TechPack = ({
       />
 
       {/* Collapsible TechPack Section */}
-      <div className="mt-8 border-t border-gray-700 pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <FileDown className="w-4 h-4" /> Technical Package
+      <div className="mt-8 border-t border-white/20 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold flex items-center gap-2 text-gradient">
+            <FileDown className="w-5 h-5" /> Technical Package
           </h3>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 rounded-full hover:bg-gray-700"
+            className="glass-button p-2 hover:scale-105 transition-all duration-300"
           >
             {isExpanded ? (
               <ChevronUp className="w-5 h-5" />
@@ -997,50 +997,49 @@ const TechPack = ({
         <button
           onClick={generateTechPack}
           disabled={isGenerating}
-          className="w-full flex items-center justify-center gap-2 p-2 bg-blue-600 hover:bg-blue-700
-                  text-white rounded-lg transition-colors disabled:opacity-50 disabled:bg-blue-800"
+          className="glass-button w-full flex items-center justify-center gap-3 p-4 font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02]"
         >
           {isGenerating ? (
             <>
-              <Loader className="w-4 h-4 animate-spin" />
+              <Loader className="w-5 h-5 animate-spin" />
               Generating Techpack...
             </>
           ) : (
             <>
-              <FileDown className="w-4 h-4" />
+              <FileDown className="w-5 h-5" />
               Generate Techpack PDF
             </>
           )}
         </button>
 
         {isExpanded && (
-          <div className="mt-4 space-y-4">
-            <p className="text-xs text-gray-400">
+          <div className="mt-6 space-y-6">
+            <p className="text-sm text-white/60">
               First capture views, then generate your technical package PDF with all customizations.
             </p>
             
             {/* Display captured views */}
             {multiViewRef.current && multiViewRef.current.captures && multiViewRef.current.captures.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium mb-3">Captured Views</h4>
-                <div className="grid grid-cols-2 gap-2">
+              <div className="mt-6">
+                <h4 className="font-medium mb-4 text-white/90">Captured Views</h4>
+                <div className="grid grid-cols-2 gap-4">
                   {multiViewRef.current.captures.map((capture, index) => (
-                    <div key={index} className="bg-gray-800 rounded overflow-hidden">
-                      <div className="p-2 border-b border-gray-700 flex justify-between items-center">
-                        <span className="text-sm">{capture.name}</span>
+                    <div key={index} className="glass-card overflow-hidden">
+                      <div className="p-4 border-b border-white/20 flex justify-between items-center">
+                        <span className="text-sm font-medium text-white/90">{capture.name}</span>
                         <a 
                           href={capture.url}
                           download={`${selectedModel}_${capture.name.toLowerCase()}.jpg`}
-                          className="p-1 hover:bg-gray-700 rounded"
+                          className="glass-button p-2 hover:scale-105 transition-all duration-300"
                         >
                           <Download className="w-4 h-4" />
                         </a>
                       </div>
-                      <div className="p-2 bg-gray-700 bg-opacity-50 flex justify-center items-center">
+                      <div className="p-4 flex justify-center items-center">
                         <img 
                           src={capture.url} 
                           alt={`${capture.name} view`} 
-                          className="w-full h-auto rounded"
+                          className="w-full h-auto rounded-lg"
                           style={{ objectFit: 'contain', maxHeight: '200px' }}
                         />
                       </div>
@@ -1064,21 +1063,21 @@ const TechPack = ({
             />
             
             {/* Quick access to construction details */}
-            <div className="p-4 bg-gray-800 rounded-lg">
-              <h4 className="font-medium mb-3 flex items-center gap-2">
-                <ScissorsSquare className="w-4 h-4" /> Construction Details
+            <div className="glass-card p-6">
+              <h4 className="font-medium mb-4 flex items-center gap-2 text-gradient">
+                <ScissorsSquare className="w-5 h-5" /> Construction Details
               </h4>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-3 text-sm">
                 {seamSpecifications[selectedModel]?.map((seam, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span>{seam.name}</span>
-                    <span className="text-gray-400">{seam.location}</span>
+                  <div key={index} className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="text-white/90">{seam.name}</span>
+                    <span className="text-white/60">{seam.location}</span>
                   </div>
                 ))}
                 {trimSpecifications[selectedModel]?.map((trim, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span>{trim.type}: {trim.description}</span>
-                    <span className="text-gray-400">{trim.location}</span>
+                  <div key={index} className="flex items-center justify-between p-3 glass rounded-lg">
+                    <span className="text-white/90">{trim.type}: {trim.description}</span>
+                    <span className="text-white/60">{trim.location}</span>
                   </div>
                 ))}
               </div>

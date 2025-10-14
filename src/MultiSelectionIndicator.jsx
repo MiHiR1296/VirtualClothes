@@ -9,21 +9,21 @@ const MultiSelectionIndicator = ({ count, onClear }) => {
   if (!count || count <= 1) return null;
   
   return (
-    <div className="mt-2 p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-sm">
-      <div className="flex items-center justify-between">
+    <div className="professional-card p-3 mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-blue-400" />
-          <span>{count} parts selected</span>
+          <Layers className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-primary">{count} parts selected</span>
         </div>
         <button 
           onClick={onClear}
-          className="p-1 hover:bg-blue-700/30 rounded-full"
+          className="professional-button p-1"
           title="Clear selection"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
-      <p className="text-xs text-gray-400 mt-1">
+      <p className="text-xs text-muted">
         Hold Ctrl/Cmd to select more parts or deselect
       </p>
     </div>

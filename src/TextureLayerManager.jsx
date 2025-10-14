@@ -173,7 +173,7 @@ export default function TextureLayerManager() {
         notification.style.display = 'flex';
         notification.style.alignItems = 'center';
         notification.style.justifyContent = 'center';
-        notification.style.zIndex = '9999';
+        notification.style.zIndex = '99997'; // Lower than Pantone modal
         document.body.appendChild(notification);
 
         // Remove notification after 3 seconds
@@ -463,60 +463,60 @@ export default function TextureLayerManager() {
     }, [contextAddLayer]);
 
     return (
-        <div className="p-4 bg-gray-900 rounded-lg">
+        <div className="professional-card p-4">
             {/* Header */}
-            <div className="flex items-center gap-2 mb-4">
-                <Layers className="w-5 h-5 text-blue-400" />
-                <h2 className="text-lg font-semibold text-white">Texture Layers</h2>
+            <div className="panel-header">
+                <Layers className="w-5 h-5 text-accent" />
+                <h2 className="text-lg font-semibold text-primary">Texture Layers</h2>
             </div>
+            <div className="panel-content">
 
-            {/* Layer List */}
-            <div className="space-y-2 my-4">
-                {layers.map((layer, index) => (
-                    <LayerItem
-                        key={`${layer.id}-${refreshTrigger}`} // Force re-render when parts change
-                        layer={layer}
-                        index={index}
-                        totalLayers={layers.length}
-                        onToggleVisibility={toggleLayerVisibility}
-                        onFileChange={handleFileChange}
-                        onMoveLayer={moveLayer}
-                        onDelete={deleteLayer}
-                        onDetailScaleChange={handleDetailScaleChange}
-                        onMaterialTypeChange={handleMaterialTypeChange}
-                        onOpacityChange={handleOpacityChange}
-                        availableParts={getAvailablePartsForLayer(layer.id)} // Only texture mesh parts
-                    />
-                ))}
-            </div>
+                {/* Layer List */}
+                <div className="space-y-3 mb-4">
+                    {layers.map((layer, index) => (
+                        <LayerItem
+                            key={`${layer.id}-${refreshTrigger}`} // Force re-render when parts change
+                            layer={layer}
+                            index={index}
+                            totalLayers={layers.length}
+                            onToggleVisibility={toggleLayerVisibility}
+                            onFileChange={handleFileChange}
+                            onMoveLayer={moveLayer}
+                            onDelete={deleteLayer}
+                            onDetailScaleChange={handleDetailScaleChange}
+                            onMaterialTypeChange={handleMaterialTypeChange}
+                            onOpacityChange={handleOpacityChange}
+                            availableParts={getAvailablePartsForLayer(layer.id)} // Only texture mesh parts
+                        />
+                    ))}
+                </div>
 
-            <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4">
+                    <button
+                        onClick={refreshTextureForParts}
+                        className="professional-button flex items-center gap-2"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        Refresh Textures
+                    </button>
+                </div>
+
+                {/* Debug Text to show available parts */}
+                {textureMeshParts.length > 0 && (
+                    <div className="text-xs text-muted mb-3 p-2 professional-card bg-tertiary">
+                        Available texture parts: {textureMeshParts.join(', ')}
+                    </div>
+                )}
+
+                {/* Add Layer Button */}
                 <button
-                    onClick={refreshTextureForParts}
-                    className="px-2 py-1 bg-blue-600 text-white rounded-lg text-xs 
-                            hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    onClick={handleAddLayer}
+                    className="professional-button primary w-full flex items-center justify-center gap-2"
                 >
-                    <RefreshCw className="w-3 h-3" />
-                    Refresh Textures
+                    <Plus className="w-4 h-4" />
+                    Add Layer
                 </button>
             </div>
-
-            {/* Debug Text to show available parts */}
-            {textureMeshParts.length > 0 && (
-                <div className="text-xs text-gray-400 mb-2">
-                    Available texture parts: {textureMeshParts.join(', ')}
-                </div>
-            )}
-
-            {/* Add Layer Button */}
-            <button
-                onClick={handleAddLayer}
-                className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         transition-colors flex items-center justify-center gap-2 mb-4"
-            >
-                <Plus className="w-4 h-4" />
-                Add Layer
-            </button>
         </div>
     );
 }

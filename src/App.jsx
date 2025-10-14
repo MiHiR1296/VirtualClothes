@@ -64,7 +64,7 @@ const CategorizedModelSelect = ({ selectedModel, onChange }) => {
   
   return (
     <select 
-      className="bg-gray-700 rounded px-3 py-1 text-sm border border-gray-600"
+      className="professional-input px-3 py-2 text-sm focus-ring"
       value={selectedModel}
       onChange={onChange}
     >
@@ -416,11 +416,11 @@ export default function App() {
 
   return (
     <TextureProvider>
-      <div className="relative min-h-screen bg-gray-900 text-white">
+      <div className="relative min-h-screen">
         {/* Top Navigation */}
-        <nav className="fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 z-20">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 className="text-xl font-bold">3D Model Viewer</h1>
+        <nav className="professional-panel">
+          <div className="flex items-center justify-between px-6 py-3">
+            <h1 className="text-lg font-semibold text-primary">Virtual Clothes Studio</h1>
             <div className="flex items-center gap-4">
               <CategorizedModelSelect 
                 selectedModel={selectedModel}
@@ -428,17 +428,17 @@ export default function App() {
               />
               <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                className="menu-toggle professional-button"
                 disabled={isLoading}
               >
-                <Menu className="w-6 h-6" />
+                <Menu className="w-5 h-5" />
               </button>
             </div>
           </div>
         </nav>
 
         {/* Main Content Area */}
-        <div className="flex h-screen pt-14">
+        <div className="flex h-screen pt-20">
           {/* Canvas */}
           <div className="flex-1 relative">
             <canvas ref={canvasRef} className="w-full h-full" />
@@ -448,7 +448,8 @@ export default function App() {
           {/* Resizable Sidebar */}
           <ResizableSidebar isOpen={isSidebarOpen}>
             {/* HDRI Controls */}
-            <div className="mb-6 border-b border-gray-700 pb-6">
+            <div className="mb-6">
+              <div className="divider"></div>
               <HDRIControls
                 onHDRIChange={(path, intensity) => handleHDRIChange(path, intensity)}
                 onRotationChange={handleHDRIRotation}
@@ -462,86 +463,92 @@ export default function App() {
             </div>
 
             {/* Fabric Selection */}
-            <div>
-              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Palette className="w-4 h-4" /> Fabric Options
-              </h2>
-              <select
-                id="materialSelect"
-                className="w-full bg-gray-700 rounded px-3 py-2 mb-3 border border-gray-600"
-                value={selectedMaterial}
-                onChange={handleMaterialChange}
-              >
-                {(FABRIC_OPTIONS[selectedModel] || FABRIC_OPTIONS.default).map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+            <div className="professional-card p-4 mb-4">
+              <div className="panel-header">
+                <Palette className="w-4 h-4" />
+                Fabric Options
+              </div>
+              <div className="panel-content">
+                <select
+                  id="materialSelect"
+                  className="professional-input w-full mb-4 focus-ring"
+                  value={selectedMaterial}
+                  onChange={handleMaterialChange}
+                >
+                  {(FABRIC_OPTIONS[selectedModel] || FABRIC_OPTIONS.default).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Material Properties */}
-            <div id="workspace-colors">
-              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <Settings className="w-4 h-4" /> Properties
-              </h2>
-              <div className="space-y-4">
-                {/* Selected Model Display */}
-                <div id="modelNameDisplay" className="text-sm text-gray-400">
-                  Selected: None
-                </div>
-                
-                {/* Multi-Selection Indicator */}
-                <MultiSelectionIndicator 
-                  count={selectedPartsCount} 
-                  onClear={clearSelection} 
-                />
-                
-                {/* Color Picker */}
-                <div>
-                  <label className="block mb-2 text-sm">Color</label>
+            <div id="workspace-colors" className="professional-card p-4 mb-4">
+              <div className="panel-header">
+                <Settings className="w-4 h-4" />
+                Properties
+              </div>
+              <div className="panel-content">
+                <div className="space-y-4">
+                  {/* Selected Model Display */}
+                  <div id="modelNameDisplay" className="text-sm text-secondary">
+                    Selected: None
+                  </div>
                   
-                  <PantoneColorPicker 
-                    currentColor={window.selectedModelPart 
-                      ? window.colorManager.getExactColorForPicker(window.selectedModelPart) 
-                      : "#ffffff"}
-                    onColorSelect={(color) => {
-                      if (window.selectedModelPart) {
+                  {/* Multi-Selection Indicator */}
+                  <MultiSelectionIndicator 
+                    count={selectedPartsCount} 
+                    onClear={clearSelection} 
+                  />
+                  
+                  {/* Color Picker */}
+                  <div className="form-group">
+                    <label className="form-label">Color</label>
+                    
+                    <PantoneColorPicker 
+                      currentColor={window.selectedModelPart 
+                        ? window.colorManager.getExactColorForPicker(window.selectedModelPart) 
+                        : "#ffffff"}
+                      onColorSelect={(color) => {
+                        if (window.selectedModelPart) {
+                          // Check if we have multiple selections
+                          if (window.selectedModelParts && window.selectedModelParts.length > 1) {
+                            // Use the global color manager to store and apply the color to all selected parts
+                            window.colorManager.storeExactColor(window.selectedModelParts, color);
+                          } else {
+                            // Apply to single selection
+                            window.colorManager.storeExactColor(window.selectedModelPart, color);
+                          }
+                          
+                          // Update color picker UI
+                          const colorPicker = document.getElementById('colorPicker');
+                          if (colorPicker) {
+                            colorPicker.value = color;
+                          }
+                        }
+                      }} 
+                    />
+                    <input 
+                      type="color" 
+                      id="colorPicker"
+                      className="professional-input w-full h-8 mt-2 focus-ring" 
+                      onInput={(e) => {
+                        // Get the color value directly from the input
+                        const exactColor = e.target.value;
+                        
                         // Check if we have multiple selections
                         if (window.selectedModelParts && window.selectedModelParts.length > 1) {
-                          // Use the global color manager to store and apply the color to all selected parts
-                          window.colorManager.storeExactColor(window.selectedModelParts, color);
-                        } else {
+                          // Apply to all selected parts
+                          window.colorManager.storeExactColor(window.selectedModelParts, exactColor);
+                        } else if (window.selectedModelPart) {
                           // Apply to single selection
-                          window.colorManager.storeExactColor(window.selectedModelPart, color);
+                          window.colorManager.storeExactColor(window.selectedModelPart, exactColor);
                         }
-                        
-                        // Update color picker UI
-                        const colorPicker = document.getElementById('colorPicker');
-                        if (colorPicker) {
-                          colorPicker.value = color;
-                        }
-                      }
-                    }} 
-                  />
-                  <input 
-                    type="color" 
-                    id="colorPicker"
-                    className="w-full h-10 rounded bg-gray-700 border border-gray-600" 
-                    onInput={(e) => {
-                      // Get the color value directly from the input
-                      const exactColor = e.target.value;
-                      
-                      // Check if we have multiple selections
-                      if (window.selectedModelParts && window.selectedModelParts.length > 1) {
-                        // Apply to all selected parts
-                        window.colorManager.storeExactColor(window.selectedModelParts, exactColor);
-                      } else if (window.selectedModelPart) {
-                        // Apply to single selection
-                        window.colorManager.storeExactColor(window.selectedModelPart, exactColor);
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -570,10 +577,10 @@ export default function App() {
 
         {/* Loading Overlay */}
         {isLoading && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-300">Loading model...</p>
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="professional-card p-6 text-center">
+              <div className="loading-spinner mx-auto mb-4"></div>
+              <p className="text-primary font-medium">Loading model...</p>
             </div>
           </div>
         )}

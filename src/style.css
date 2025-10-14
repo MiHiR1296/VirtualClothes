@@ -2,237 +2,893 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Professional Design System - Photoshop-like */
+:root {
+  /* Professional Color Palette */
+  --bg-primary: #2c2c2c;
+  --bg-secondary: #3c3c3c;
+  --bg-tertiary: #4a4a4a;
+  --bg-panel: #404040;
+  --bg-input: #4a4a4a;
+  --bg-button: #5a5a5a;
+  --bg-button-hover: #6a6a6a;
+  --bg-button-active: #4a4a4a;
+  --bg-selected: #0078d4;
+  --bg-selected-hover: #106ebe;
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #b0b0b0;
+  --text-disabled: #808080;
+  --text-accent: #0078d4;
+  
+  /* Borders */
+  --border-light: #5a5a5a;
+  --border-medium: #6a6a6a;
+  --border-dark: #2a2a2a;
+  --border-focus: #0078d4;
+  
+  /* Shadows */
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-heavy: 0 4px 12px rgba(0, 0, 0, 0.5);
+  
+  /* Status Colors */
+  --success: #107c10;
+  --warning: #ff8c00;
+  --error: #d13438;
+  --info: #0078d4;
+}
+
 /* Base Reset */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body, html {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    font-family: system-ui, -apple-system, sans-serif;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Professional Components */
+.professional-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  box-shadow: var(--shadow-light);
+}
+
+.professional-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  box-shadow: var(--shadow-light);
+}
+
+.professional-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  color: var(--text-primary);
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.professional-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1px var(--border-focus);
+}
+
+.professional-input::placeholder {
+  color: var(--text-muted);
+}
+
+.professional-button {
+  background: var(--bg-button);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.professional-button:hover {
+  background: var(--bg-button-hover);
+  border-color: var(--border-medium);
+}
+
+.professional-button:active {
+  background: var(--bg-button-active);
+  transform: translateY(1px);
+}
+
+.professional-button:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.professional-button.primary {
+  background: var(--bg-selected);
+  border-color: var(--bg-selected);
+  color: white;
+}
+
+.professional-button.primary:hover {
+  background: var(--bg-selected-hover);
+  border-color: var(--bg-selected-hover);
+}
+
+.professional-button.danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
+}
+
+.professional-button.danger:hover {
+  background: #b52d30;
+  border-color: #b52d30;
 }
 
 /* Canvas Setup */
 .threejs {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
-/* Loading Screen Styles - Increased z-index */
+/* Loading Screen */
 .loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999; /* Increased to be above all other elements */
-    transition: opacity 0.5s ease-out;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
 }
 
 .loading-screen.hidden {
-    opacity: 0;
-    pointer-events: none;
-    display: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .loading-text {
-    color: white;
-    font-size: 24px;
-    margin-bottom: 20px;
-    font-weight: bold;
+  color: var(--text-primary);
+  font-size: 16px;
+  margin-bottom: 20px;
+  font-weight: 500;
 }
 
 .loading-log {
-    color: #8cc63f;
-    font-size: 16px;
-    font-family: monospace;
-    margin-top: 20px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 5px;
-    min-width: 300px;
-    text-align: center;
+  color: var(--success);
+  font-size: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  min-width: 300px;
+  text-align: center;
 }
-
-/* .texture-edit-mode {
-    outline: 2px solid #3b82f6; /* Blue outline */
-    /* outline-offset: -2px;
-    position: relative;
-} */ 
-
-/* .texture-edit-mode::before {
-    content: "Texture Edit Mode";
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: #3b82f6;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    pointer-events: none;
-    z-index: 100;
-}
-
-.texture-edit-mode::after {
-    content: "Press ESC to exit";
-    position: absolute;
-    top: 34px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    pointer-events: none;
-    z-index: 100;
-} */
-
 
 #loadingBarContainer {
-    width: 300px;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    overflow: hidden;
+  width: 300px;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
 }
 
 #loadingBar {
-    height: 100%;
-    width: 0%;
-    background: #8cc63f;
-    transition: width 0.3s ease;
+  height: 100%;
+  width: 0%;
+  background: var(--bg-selected);
+  transition: width 0.3s ease;
 }
 
 #canvas-container {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #1a1a1a;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
 }
 
 #canvas-container canvas {
-    width: 100% !important;
-    height: 100% !important;
-    outline: none;
-    touch-action: none;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+  touch-action: none;
 }
 
-@layer base {
-    :root {
-        --background: 0 0% 100%;
-        --foreground: 222.2 84% 4.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 222.2 84% 4.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 222.2 84% 4.9%;
-        --primary: 222.2 47.4% 11.2%;
-        --primary-foreground: 210 40% 98%;
-        --secondary: 210 40% 96.1%;
-        --secondary-foreground: 222.2 47.4% 11.2%;
-        --muted: 210 40% 96.1%;
-        --muted-foreground: 215.4 16.3% 46.9%;
-        --accent: 210 40% 96.1%;
-        --accent-foreground: 222.2 47.4% 11.2%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 214.3 31.8% 91.4%;
-        --input: 214.3 31.8% 91.4%;
-        --ring: 222.2 84% 4.9%;
-        --radius: 0.5rem;
-    }
-
-    .dark {
-        --background: 222.2 84% 4.9%;
-        --foreground: 210 40% 98%;
-        --card: 222.2 84% 4.9%;
-        --card-foreground: 210 40% 98%;
-        --popover: 222.2 84% 4.9%;
-        --popover-foreground: 210 40% 98%;
-        --primary: 210 40% 98%;
-        --primary-foreground: 222.2 47.4% 11.2%;
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 217.2 32.6% 17.5%;
-        --input: 217.2 32.6% 17.5%;
-        --ring: 212.7 26.8% 83.9%;
-    }
-}
-
-@layer base {
-    * {
-        @apply border-border;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
-}
-
-/* Navigation and Menu Styles */
+/* Professional Navigation */
 nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    background-color: rgba(31, 41, 55, 0.95);
-    border-bottom: 1px solid rgba(75, 85, 99, 0.4);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-light);
 }
 
-/* Buttons and Controls Styles */
-/* .animation-toggle-button {
-    position: fixed;
-    bottom: 20px;
-    right: 350px;
-    z-index: 40; 
-    padding: 10px 20px;
-    background-color: rgba(31, 41, 55, 0.9);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    transition: background-color 0.2s ease;
-}
-
-.animation-toggle-button:hover {
-    background-color: rgba(55, 65, 81, 0.9);
-} */
-
-/* Menu Toggle Button */
+/* Professional Menu Toggle */
 .menu-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    background-color: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: var(--bg-button);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .menu-toggle:hover {
-    background-color: rgba(75, 85, 99, 0.4);
-    border-radius: 4px;
+  background: var(--bg-button-hover);
+  border-color: var(--border-medium);
+}
+
+/* Professional Range Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 16px;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: var(--bg-tertiary);
+  height: 4px;
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-selected);
+  height: 12px;
+  width: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--bg-selected-hover);
+  transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--bg-tertiary);
+  height: 4px;
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+}
+
+input[type="range"]::-moz-range-thumb {
+  background: var(--bg-selected);
+  height: 12px;
+  width: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+}
+
+/* Professional Select Styling */
+select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  color: var(--text-primary);
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1px var(--border-focus);
+}
+
+select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 4px 8px;
+}
+
+/* Professional Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-button);
+  border-radius: 2px;
+  border: 1px solid var(--border-light);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-button-hover);
+}
+
+/* Professional Text Styles */
+.text-primary {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.text-disabled {
+  color: var(--text-disabled);
+  font-weight: 400;
+}
+
+.text-accent {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+/* Professional Status Colors */
+.text-success {
+  color: var(--success);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+.text-info {
+  color: var(--info);
+}
+
+/* Professional Focus States */
+.focus-ring:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1px var(--border-focus);
+}
+
+/* Professional Loading Spinner */
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--bg-tertiary);
+  border-top: 2px solid var(--bg-selected);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Professional Form Elements */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-control {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1px var(--border-focus);
+}
+
+/* Professional Panel Headers */
+.panel-header {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-content {
+  padding: 16px;
+}
+
+/* Professional Divider */
+.divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 12px 0;
+}
+
+/* Professional Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 2px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+}
+
+.badge.primary {
+  background: var(--bg-selected);
+  color: white;
+  border-color: var(--bg-selected);
+}
+
+.badge.success {
+  background: var(--success);
+  color: white;
+  border-color: var(--success);
+}
+
+.badge.warning {
+  background: var(--warning);
+  color: white;
+  border-color: var(--warning);
+}
+
+.badge.error {
+  background: var(--error);
+  color: white;
+  border-color: var(--error);
+}
+
+/* Professional Tooltip */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  text-align: center;
+  border-radius: 2px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-medium);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Professional Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  box-shadow: var(--shadow-heavy);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+/* Professional Grid */
+.grid {
+  display: grid;
+  gap: 8px;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Professional Flexbox Utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.gap-6 {
+  gap: 24px;
+}
+
+/* Professional Spacing */
+.p-2 {
+  padding: 8px;
+}
+
+.p-4 {
+  padding: 16px;
+}
+
+.p-6 {
+  padding: 24px;
+}
+
+.px-4 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.py-2 {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.py-4 {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.m-2 {
+  margin: 8px;
+}
+
+.m-4 {
+  margin: 16px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mb-6 {
+  margin-bottom: 24px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+/* Professional Text Sizes */
+.text-xs {
+  font-size: 11px;
+}
+
+.text-sm {
+  font-size: 13px;
+}
+
+.text-base {
+  font-size: 14px;
+}
+
+.text-lg {
+  font-size: 16px;
+}
+
+.text-xl {
+  font-size: 18px;
+}
+
+.text-2xl {
+  font-size: 24px;
+}
+
+/* Professional Font Weights */
+.font-normal {
+  font-weight: 400;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* Professional Width Utilities */
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+/* Professional Border Radius */
+.rounded {
+  border-radius: 2px;
+}
+
+.rounded-sm {
+  border-radius: 1px;
+}
+
+/* Professional Opacity */
+.opacity-50 {
+  opacity: 0.5;
+}
+
+.opacity-75 {
+  opacity: 0.75;
+}
+
+/* Professional Cursor */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+
+/* Professional Display */
+.hidden {
+  display: none;
+}
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+/* Professional Position */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+/* Professional Z-Index */
+.z-10 {
+  z-index: 10;
+}
+
+.z-20 {
+  z-index: 20;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+.z-1000 {
+  z-index: 1000;
+}
+
+/* Professional Overflow */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+/* Professional Transform */
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+.translate-x-full {
+  transform: translateX(100%);
+}
+
+/* Professional Transition */
+.transition {
+  transition: all 0.15s ease;
+}
+
+.transition-all {
+  transition: all 0.15s ease;
+}
+
+/* Professional Hover States */
+.hover\:bg-gray-700:hover {
+  background: var(--bg-button-hover);
+}
+
+.hover\:text-white:hover {
+  color: var(--text-primary);
+}
+
+/* Professional Focus States */
+.focus\:outline-none:focus {
+  outline: none;
+}
+
+.focus\:ring:focus {
+  box-shadow: 0 0 0 1px var(--border-focus);
+}
+
+/* Professional Disabled States */
+.disabled\:opacity-50:disabled {
+  opacity: 0.5;
+}
+
+.disabled\:cursor-not-allowed:disabled {
+  cursor: not-allowed;
+}
+
+/* Professional Responsive */
+@media (max-width: 768px) {
+  .sm\:hidden {
+    display: none;
+  }
+}
+
+/* Professional Animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease;
+}
+
+/* Professional Selection */
+::selection {
+  background: var(--bg-selected);
+  color: white;
+}
+
+/* Professional Scrollbar for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-button) var(--bg-tertiary);
 }

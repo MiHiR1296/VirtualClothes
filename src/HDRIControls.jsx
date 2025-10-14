@@ -73,17 +73,17 @@ const HDRIControls = ({
     };
 
     return (
-        <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <Sun className="w-4 h-4" /> 
+        <div className="glass-card-enhanced p-6">
+            <h3 className="text-lg font-semibold flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-gradient text-high-contrast">
+                    <Sun className="w-5 h-5" /> 
                     Lighting Setup
                 </div>
                 <button
                     onClick={toggleBackground}
                     title={showAsBackground ? "Hide HDRI Background" : "Show HDRI Background"}
-                    className={`p-2 rounded-lg transition-colors ${
-                        showAsBackground ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                    className={`glass-button p-3 transition-all duration-300 ${
+                        showAsBackground ? 'glass-glow' : ''
                     }`}
                 >
                     {showAsBackground ? (
@@ -95,28 +95,27 @@ const HDRIControls = ({
             </h3>
             
             {/* HDRI Selection */}
-            <div className="space-y-1">
-                <label className="text-sm text-gray-400">Environment</label>
+            <div className="space-y-3 mb-6">
+                <label className="text-sm font-medium text-medium-contrast">Environment</label>
                 <select
                     value={selectedHDRI}
                     onChange={handleHDRIChange}
-                    className="w-full px-3 py-1 bg-gray-700 rounded-lg border border-gray-600 
-                            text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="glass-input-enhanced w-full px-4 py-3 text-sm focus-ring text-high-contrast"
                 >
                     {Object.entries(HDRI_OPTIONS).map(([id, hdri]) => (
                         <option key={id} value={id}>{hdri.name}</option>
                     ))}
                 </select>
-                <p className="text-xs text-gray-500">{HDRI_OPTIONS[selectedHDRI].description}</p>
+                <p className="text-xs text-low-contrast">{HDRI_OPTIONS[selectedHDRI].description}</p>
             </div>
 
             {/* Rotation Control */}
-            <div className="space-y-1">
+            <div className="space-y-3 mb-6">
                 <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-400 flex items-center gap-1">
+                    <label className="text-sm font-medium text-medium-contrast flex items-center gap-2">
                         <RotateCw className="w-4 h-4" /> Rotation
                     </label>
-                    <span className="text-xs text-gray-400">{rotation.toFixed(0)}°</span>
+                    <span className="text-xs text-low-contrast font-mono">{rotation.toFixed(0)}°</span>
                 </div>
                 <input
                     type="range"
@@ -124,15 +123,15 @@ const HDRIControls = ({
                     max="360"
                     value={rotation}
                     onChange={handleRotationChange}
-                    className="w-full accent-blue-500"
+                    className="w-full"
                 />
             </div>
 
             {/* Intensity Control */}
-            <div className="space-y-1">
+            <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-400">Intensity</label>
-                    <span className="text-xs text-gray-400">{intensity.toFixed(2)}</span>
+                    <label className="text-sm font-medium text-medium-contrast">Intensity</label>
+                    <span className="text-xs text-low-contrast font-mono">{intensity.toFixed(2)}</span>
                 </div>
                 <input
                     type="range"
@@ -141,7 +140,7 @@ const HDRIControls = ({
                     step="0.01"
                     value={intensity}
                     onChange={handleIntensityChange}
-                    className="w-full accent-blue-500"
+                    className="w-full"
                 />
             </div>
         </div>
