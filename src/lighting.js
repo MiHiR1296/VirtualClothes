@@ -34,8 +34,8 @@ const envMapShader = {
 
 export const LIGHTING_CONFIG = {
     renderer: {
-        toneMapping: 'CineonToneMapping',
-        toneMappingExposure: 1.0,
+        toneMapping: 'ACESFilmicToneMapping',
+        toneMappingExposure: 0.96,
         shadowMapType: 'PCFSoftShadowMap',
         physicallyCorrectLights: true,
         outputEncoding: 'sRGBEncoding',
@@ -44,22 +44,22 @@ export const LIGHTING_CONFIG = {
     environmentMap: {
         enabled: true,
         path: getTexturePath('lebombo_2k.exr'),
-        intensity: 0.42,
-        envMapIntensity: 0.42,
+        intensity: 0.52,
+        envMapIntensity: 0.52,
         showBackground: false
     },
     shadowCatcher: {
         enabled: true,
         size: 100,
-        opacity: 0.01,
+        opacity: 0.22,
         position: { x: 0, y: -0.001, z: 0 }
     },
     lights: {
         keyLight: {
             type: 'SpotLight',
             enabled: true,
-            position: { x: 5, y: 20, z: 15 },
-            intensity: 500,
+            position: { x: -8, y: 18, z: 14 },
+            intensity: 470,
             color: 0xfffdfa,
             angle: Math.PI / 3,
             penumbra: 0.5,
@@ -73,8 +73,8 @@ export const LIGHTING_CONFIG = {
         fillLight: {
             type: 'SpotLight',
             enabled: true,
-            position: { x: -15, y: 18, z: 1 },
-            intensity: 250,
+            position: { x: 16, y: 12, z: 10 },
+            intensity: 75,
             color: 0xfffdfa,
             angle: Math.PI / 3,
             penumbra: 1,
@@ -83,9 +83,9 @@ export const LIGHTING_CONFIG = {
         },
         rimLight: {
             type: 'SpotLight',
-            enabled: false,
-            position: { x: -15, y: 18, z: -6 },
-            intensity: 150,
+            enabled: true,
+            position: { x: 0, y: 15, z: -14 },
+            intensity: 190,
             color: 0xfffaee,
             angle: Math.PI / 3,
             penumbra: 1,
@@ -97,7 +97,7 @@ export const LIGHTING_CONFIG = {
             enabled: true,
             skyColor: 0xffffff,
             groundColor: 0xadadad,
-            intensity: 0.2
+            intensity: 0.1
         },
         fillLight3: {
             type: 'SpotLight',
@@ -113,7 +113,7 @@ export const LIGHTING_CONFIG = {
             type: 'SpotLight',
             enabled: true,
             position: { x: 15, y: 15, z: -3 },
-            intensity: 150,
+            intensity: 170,
             color: 0xfffaee,
             angle: Math.PI / 3,
             penumbra: 1,
@@ -133,7 +133,7 @@ export class LightingSystem {
         this.background = null;
         this.currentHDRI = null;
         this.environmentRotation = 0;
-        this.defaultBackground = new THREE.Color(0x1a1a1a);
+        this.defaultBackground = null;
         this.showHDRIBackground = false;
         this.currentEnvironmentMap = null;
         this.currentIntensity = LIGHTING_CONFIG.environmentMap.intensity; // Store the current intensity
@@ -166,23 +166,8 @@ export class LightingSystem {
       }
     
     createGradientBackground() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 2;
-        canvas.height = 2;
-
-        const context = canvas.getContext('2d');
-        const gradient = context.createLinearGradient(0, 0, 0, 2);
-        
-        // Define gradient colors
-        gradient.addColorStop(0, '#0a0a0a');    // Almost black at top
-        gradient.addColorStop(0.5, '#121212');  // Very dark gray in middle
-        gradient.addColorStop(0.9, '#050505');    // Almost black at bottom
-
-        context.fillStyle = gradient;
-        context.fillRect(0, 0, 2, 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        return texture;
+        // Keep the WebGL background transparent so the CSS studio backdrop can show through.
+        return null;
     }
 
 
@@ -195,6 +180,7 @@ export class LightingSystem {
         this.renderer.shadowMap.type = THREE[config.shadowMapType];
         this.renderer.physicallyCorrectLights = true;
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.setClearColor(0x111724, 0);
     }
 
     getPerformanceStats() {
@@ -359,9 +345,8 @@ rotateEnvironment(angle) {
             this.scene.background = this.currentEnvironmentMap;
             logDebug("Showing HDRI background");
         } else {
-            // Use gradient background
             this.scene.background = this.createGradientBackground();
-            logDebug("Showing gradient background");
+            logDebug("Showing product-stage background");
         }
     }
 

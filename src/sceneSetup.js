@@ -19,6 +19,7 @@ export class SceneManager {
 
   createScene() {
     this.scene = new THREE.Scene();
+    this.scene.background = null;
 
     // Set up gradient background and subtle fog
     // const topColor = new THREE.Color(0x181818);
@@ -82,9 +83,10 @@ export class SceneManager {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-    this.renderer.toneMapping = THREE.CineonToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 0.96;
     this.renderer.physicallyCorrectLights = true;
+    this.renderer.setClearColor(0x111724, 0);
 
     this.updateSize();
   }
@@ -179,10 +181,10 @@ export class SceneManager {
     const size = new THREE.Vector3();
     boundingBox.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
-    const distance = maxDim * 2;
+    const distance = maxDim * 3.15;
 
     // Calculate new camera position
-    const direction = new THREE.Vector3(-1, 1, 1).normalize();
+    const direction = new THREE.Vector3(0, 0.42, 1).normalize();
     const position = center.clone().add(direction.multiplyScalar(distance));
     
     // Update camera

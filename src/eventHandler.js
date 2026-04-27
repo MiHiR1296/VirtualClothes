@@ -21,6 +21,10 @@ export class EventHandler {
         // Initialize global variable
         window.selectedModelPart = null;
         window.findTextureObjects = this.findTextureObjects.bind(this);
+        window.getSelectableModelParts = this.getSelectablePartsMetadata.bind(this);
+        window.setSelectedModelPartsByName = this.selectModelPartsByName.bind(this);
+        window.selectAllModelParts = this.clearSelection.bind(this);
+        window.clearModelPartSelection = this.clearSelection.bind(this);
         
         // Add a new property to track multiple selected parts
         this.selectedModelParts = [];
@@ -35,6 +39,115 @@ export class EventHandler {
         this.isTextureEditModeActive = false;
     
         this.setupEventListeners();
+    }
+
+    getSelectableObjects() {
+        const objects = [];
+        this.scene.traverse((object) => {
+            if (this.isSelectableObject(object)) {
+                objects.push(object);
+            }
+        });
+        return objects;
+    }
+
+    getSelectablePartsMetadata() {
+        const groups = new Map();
+
+        this.getSelectableObjects().forEach((object) => {
+            const label = this.formatPartName(object.name);
+            const key = this.normalizePartGroup(label);
+
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    id: key,
+                    name: key,
+                    label: key,
+                    partNames: []
+                });
+            }
+
+            groups.get(key).partNames.push(object.name);
+        });
+
+        return Array.from(groups.values());
+    }
+
+    formatPartName(name = '') {
+        return name
+            .replace(/^(Mesh_|Object_)/i, '')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+
+    normalizePartGroup(label = '') {
+        return label
+            .replace(/\s*\.\d+$/i, '')
+            .replace(/\s*[-_ ]?\d+$/i, '')
+            .replace(/\s+/g, ' ')
+            .trim() || label;
+    }
+
+    getPartGroupKey(object) {
+        return this.normalizePartGroup(this.formatPartName(object.name));
+    }
+
+    getObjectsForPartGroup(groupKey) {
+        return this.getSelectableObjects().filter((object) => this.getPartGroupKey(object) === groupKey);
+    }
+
+    emitSelectionChange() {
+        window.dispatchEvent(new CustomEvent('model-part-selected', {
+            detail: {
+                count: this.selectedModelParts.length,
+                parts: this.selectedModelParts.map((part) => part.name),
+                availableParts: this.getSelectablePartsMetadata()
+            }
+        }));
+    }
+
+    setSelection(parts, primaryPart = parts[0] || null) {
+        this.selectedModelParts = parts;
+        window.selectedModelParts = this.selectedModelParts;
+        window.selectedModelPart = primaryPart;
+
+        if (this.selectedModelParts.length === 0) {
+            this.updateModelNameDisplay('All parts');
+            this.emitSelectionChange();
+            return;
+        }
+
+        this.updateUIForMultiSelection();
+    }
+
+    clearSelection() {
+        this.setSelection([], null);
+    }
+
+    selectAllSelectableObjects() {
+        this.clearSelection();
+    }
+
+    selectModelPartsByName(partNamesOrGroupIds = []) {
+        if (!partNamesOrGroupIds.length) {
+            this.clearSelection();
+            return;
+        }
+
+        const selectedNames = new Set();
+        const selectableGroups = this.getSelectablePartsMetadata();
+
+        partNamesOrGroupIds.forEach((nameOrGroupId) => {
+            const group = selectableGroups.find((item) => item.id === nameOrGroupId || item.name === nameOrGroupId);
+            if (group) {
+                group.partNames.forEach((partName) => selectedNames.add(partName));
+            } else {
+                selectedNames.add(nameOrGroupId);
+            }
+        });
+
+        const selectedParts = this.getSelectableObjects().filter((object) => selectedNames.has(object.name));
+        this.setSelection(selectedParts, selectedParts[0] || null);
     }
 
     setupEventListeners() {
@@ -159,18 +272,14 @@ export class EventHandler {
         }
         
         // Dispatch an event so that other components know the selection has changed
-        window.dispatchEvent(new CustomEvent('model-part-selected', {
-            detail: {
-                count: 1,
-                parts: [object.name]
-            }
-        }));
+        this.emitSelectionChange();
     }
     
     // Add a new method to update UI for multi-selection
     updateUIForMultiSelection() {
         if (!this.selectedModelParts || this.selectedModelParts.length === 0) {
-            this.updateModelNameDisplay('None');
+            this.updateModelNameDisplay('All parts');
+            this.emitSelectionChange();
             return;
         }
         
@@ -194,12 +303,7 @@ export class EventHandler {
         }
         
         // Dispatch an event so that other components know the selection has changed
-        window.dispatchEvent(new CustomEvent('model-part-selected', {
-            detail: {
-                count: this.selectedModelParts.length,
-                parts: this.selectedModelParts.map(part => part.name)
-            }
-        }));
+        this.emitSelectionChange();
     }
     
     isTextureMesh(object) {
@@ -213,15 +317,10 @@ export class EventHandler {
                 window.selectedModelPart = null;
                 this.selectedModelParts = [];
                 window.selectedModelParts = [];
-                this.updateModelNameDisplay('None');
+                this.updateModelNameDisplay('All parts');
                 
                 // Dispatch event with zero count when model changes
-                window.dispatchEvent(new CustomEvent('model-part-selected', {
-                    detail: {
-                        count: 0,
-                        parts: []
-                    }
-                }));
+                this.emitSelectionChange();
                 
                 this.loadingManager.show();
                 
@@ -316,53 +415,35 @@ export class EventHandler {
                 // Check if Ctrl or Cmd key is pressed
                 if (event.ctrlKey || event.metaKey) {
                     // Multi-selection mode
+                    const nextSelection = [...this.selectedModelParts];
+                    const clickedGroupParts = this.getObjectsForPartGroup(this.getPartGroupKey(clickedObject));
+                    const clickedGroupIds = new Set(clickedGroupParts.map((part) => part.uuid));
                     
                     // Check if the object is already selected
-                    const existingIndex = this.selectedModelParts.findIndex(part => 
-                        part.uuid === clickedObject.uuid
+                    const isGroupSelected = clickedGroupParts.every((part) =>
+                        nextSelection.some((selectedPart) => selectedPart.uuid === part.uuid)
                     );
                     
-                    if (existingIndex >= 0) {
-                        // Object is already selected, remove it (toggle)
-                        this.selectedModelParts.splice(existingIndex, 1);
+                    if (isGroupSelected) {
+                        for (let index = nextSelection.length - 1; index >= 0; index -= 1) {
+                            if (clickedGroupIds.has(nextSelection[index].uuid)) {
+                                nextSelection.splice(index, 1);
+                            }
+                        }
                     } else {
-                        // Add object to selection
-                        this.selectedModelParts.push(clickedObject);
+                        clickedGroupParts.forEach((part) => {
+                            if (!nextSelection.some((selectedPart) => selectedPart.uuid === part.uuid)) {
+                                nextSelection.push(part);
+                            }
+                        });
                     }
                     
-                    // Always update primary selection for immediate UI feedback
-                    window.selectedModelPart = clickedObject;
-                    
-                    // Update global array reference
-                    window.selectedModelParts = this.selectedModelParts;
-                    
-                    // Update UI to show multiple selection
-                    this.updateUIForMultiSelection();
+                    this.setSelection(nextSelection, clickedObject);
                 } else {
-                    // Single selection mode
-                    window.selectedModelPart = clickedObject;
-                    
-                    // Clear multi-selection array
-                    this.selectedModelParts = [clickedObject];
-                    window.selectedModelParts = this.selectedModelParts;
-                    
-                    // Update UI for single selection
-                    this.updateUIForSelection(clickedObject);
+                    this.setSelection(this.getObjectsForPartGroup(this.getPartGroupKey(clickedObject)), clickedObject);
                 }
             } else {
-                // No object selected, clear all selections
-                window.selectedModelPart = null;
-                this.selectedModelParts = [];
-                window.selectedModelParts = this.selectedModelParts;
-                this.updateModelNameDisplay('None');
-                
-                // Dispatch event with zero count
-                window.dispatchEvent(new CustomEvent('model-part-selected', {
-                    detail: {
-                        count: 0,
-                        parts: []
-                    }
-                }));
+                this.clearSelection();
             }
         });
     }
@@ -370,18 +451,7 @@ export class EventHandler {
     setupKeyboardHandler() {
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
-                window.selectedModelPart = null;
-                this.selectedModelParts = [];
-                window.selectedModelParts = this.selectedModelParts;
-                this.updateModelNameDisplay('None');
-                
-                // Dispatch event with zero count when clearing selection with Escape
-                window.dispatchEvent(new CustomEvent('model-part-selected', {
-                    detail: {
-                        count: 0,
-                        parts: []
-                    }
-                }));
+                this.clearSelection();
             }
         });
     }
@@ -487,20 +557,14 @@ export class EventHandler {
             }
         }
         
-        // Dispatch an event so that other components know the selection has changed
-        window.dispatchEvent(new CustomEvent('model-part-selected', {
-            detail: {
-                count: 1,
-                parts: [object.name]
-            }
-        }));
+        this.emitSelectionChange();
     }
     
 
     updateModelNameDisplay(name) {
         const modelNameDisplay = document.getElementById('modelNameDisplay');
         if (modelNameDisplay) {
-            modelNameDisplay.innerText = `Selected: ${name}`;
+            modelNameDisplay.innerText = `Scope: ${name}`;
             modelNameDisplay.style.color = '#FFFFFF';
         }
     }

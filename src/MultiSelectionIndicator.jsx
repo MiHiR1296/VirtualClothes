@@ -23,9 +23,6 @@ const MultiSelectionIndicator = ({ count, onClear }) => {
           <X className="w-4 h-4" />
         </button>
       </div>
-      <p className="text-xs text-muted">
-        Hold Ctrl/Cmd to select more parts or deselect
-      </p>
     </div>
   );
 };

@@ -11,24 +11,24 @@ export class OptimizedMaterialManager {
         this.materialCache = new Map();
         this.loadingPromises = new Map();
         this.materialSettings = {
-            normalScale: 1.0,
-            roughness: 1.0,
+            normalScale: 1.35,
+            roughness: 0.82,
             metalness: 0.1,
-            envMapIntensity: 0.2
+            envMapIntensity: 0.52
         };
         
         // Debug flag
-        this.debug = true;
+        this.debug = false;
 
         // Material presets with texture paths
         this.materialPresets = {
             inside: {
                 type: 'MeshPhysicalMaterial',
                 color: new THREE.Color(0xffffff),
-                roughness: 1.0,
+                roughness: 0.86,
                 metalness: 0.0,
-                sheen: 0.6,
-                sheenRoughness: 1.0,
+                sheen: 0.82,
+                sheenRoughness: 0.72,
                 transmission: 0.15,
                 side: THREE.FrontSide,
                 transparent: true,
@@ -43,10 +43,10 @@ export class OptimizedMaterialManager {
             outside: {
                 type: 'MeshPhysicalMaterial',
                 color: new THREE.Color(0xffffff),
-                roughness: 1.0,
-                metalness: 0.1,
-                sheen: 0.6,
-                sheenRoughness: 1.0,
+                roughness: 0.84,
+                metalness: 0.04,
+                sheen: 0.9,
+                sheenRoughness: 0.68,
                 side: THREE.DoubleSide,
                 transparent: true,
                 transmission: 0.1,
@@ -291,6 +291,7 @@ export class OptimizedMaterialManager {
         // Add textures if they exist
         if (textures.baseColor) {
             material.map = textures.baseColor;
+            this.applyNeutralFabricMapShader(material, type);
         }
         if (textures.normal) {
             material.normalMap = textures.normal;
@@ -307,9 +308,43 @@ export class OptimizedMaterialManager {
         if (textures.metalnessMap) {
             material.metalnessMap = textures.metalnessMap;
         }
+        if (material.envMapIntensity !== undefined) {
+            material.envMapIntensity = this.materialSettings.envMapIntensity;
+        }
     
         material.needsUpdate = true;
         return material;
+    }
+
+    applyNeutralFabricMapShader(material, type) {
+        if (!material?.map || !['inside', 'outside'].includes(type)) return;
+
+        material.color?.set(0xffffff);
+        material.userData = {
+            ...material.userData,
+            neutralFabricAlbedo: true
+        };
+
+        material.onBeforeCompile = (shader) => {
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <map_fragment>',
+                `
+                #ifdef USE_MAP
+                    vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+                    #ifdef DECODE_VIDEO_TEXTURE
+                        sampledDiffuseColor = sRGBTransferEOTF( sampledDiffuseColor );
+                    #endif
+
+                    float fabricLuminance = dot(sampledDiffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+                    float neutralDetail = clamp(0.94 + (fabricLuminance - 0.72) * 0.32, 0.78, 1.06);
+                    diffuseColor.rgb *= vec3(neutralDetail);
+                    diffuseColor.a *= sampledDiffuseColor.a;
+                #endif
+                `
+            );
+        };
+
+        material.customProgramCacheKey = () => `neutral-fabric-albedo-v1-${type}`;
     }
 
     /**
@@ -416,6 +451,7 @@ export class OptimizedMaterialManager {
                 materialSet.material, 
                 meshFileName
             );
+            this.applyNeutralFabricMapShader(duplicateMaterial, materialType);
             
             // Store this duplicate for future meshes from the same GLB file
             this.meshMaterials.set(materialKey, duplicateMaterial);

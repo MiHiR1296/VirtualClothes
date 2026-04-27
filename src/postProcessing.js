@@ -73,8 +73,8 @@ export class PostProcessing {
         
         // Vignette effect - using the nice values
         const vignettePass = new ShaderPass(VignetteShader);
-        vignettePass.uniforms.offset.value = 0.8; // Adjust for desired effect
-        vignettePass.uniforms.darkness.value = 0.8; // Adjust for desired effect
+        vignettePass.uniforms.offset.value = 1.15;
+        vignettePass.uniforms.darkness.value = 0.12;
         this.composer.addPass(vignettePass);
         
         // SMAA for smooth anti-aliasing

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export class LoadingManager {
     constructor() {
         this.loadingScreen = document.querySelector('.loading-screen');
+        this.loadingText = document.querySelector('.loading-text');
         this.loadingLog = document.querySelector('.loading-log');
         this.loadingBar = document.getElementById('loadingBar');
         this.isLoading = false;
@@ -13,6 +14,14 @@ export class LoadingManager {
         this._updateLog = null;
         this.hideTimeout = null;
         this.lastProgress = 0;  // Track last progress to avoid unnecessary updates
+        this.loadingPhrases = [
+            'Preparing garment geometry',
+            'Streaming fabric textures',
+            'Building material previews',
+            'Setting up studio lighting'
+        ];
+        this.currentPhraseIndex = 0;
+        this.phraseInterval = null;
     }
 
     startLoading(totalItems) {
@@ -45,6 +54,10 @@ export class LoadingManager {
             if (this.loadingBar) {
                 this.loadingBar.style.width = `${progress}%`;
             }
+
+            if (this.loadingText) {
+                this.loadingText.textContent = `${this.loadingPhrases[this.currentPhraseIndex]} ${Math.round(progress)}%`;
+            }
             
             if (this._onProgress) {
                 this._onProgress(progress);
@@ -55,6 +68,16 @@ export class LoadingManager {
     updateLog(message) {
         if (this.loadingLog) {
             this.loadingLog.textContent = message;
+        }
+        if (this.loadingText && message) {
+            const lowerMessage = message.toLowerCase();
+            if (lowerMessage.includes('texture') || lowerMessage.includes('material')) {
+                this.loadingText.textContent = this.loadingPhrases[1];
+            } else if (lowerMessage.includes('complete')) {
+                this.loadingText.textContent = 'Finalizing product view';
+            } else if (lowerMessage.includes('loading:')) {
+                this.loadingText.textContent = this.loadingPhrases[this.currentPhraseIndex];
+            }
         }
         if (this._updateLog) {
             this._updateLog(message);
@@ -67,6 +90,7 @@ export class LoadingManager {
             this.isLoading = true;
             this.loadingScreen.classList.remove('hidden');
             this.loadingScreen.style.display = 'flex';
+            this.startPhraseRotation();
             requestAnimationFrame(() => {
                 this.loadingScreen.style.opacity = '1';
             });
@@ -83,6 +107,7 @@ export class LoadingManager {
                 if (!this.isLoading && this.loadingScreen) {
                     this.loadingScreen.classList.add('hidden');
                     this.loadingScreen.style.display = 'none';
+                    this.stopPhraseRotation();
                     this.updateProgress(0);
                     
                     if (this._onComplete) {
@@ -90,6 +115,28 @@ export class LoadingManager {
                     }
                 }
             }, 1000);
+        }
+    }
+
+    startPhraseRotation() {
+        this.stopPhraseRotation();
+        this.currentPhraseIndex = 0;
+        if (this.loadingText) {
+            this.loadingText.textContent = this.loadingPhrases[this.currentPhraseIndex];
+        }
+        this.phraseInterval = window.setInterval(() => {
+            this.currentPhraseIndex = (this.currentPhraseIndex + 1) % this.loadingPhrases.length;
+            if (this.loadingText) {
+                const progress = Math.round(this.lastProgress);
+                this.loadingText.textContent = `${this.loadingPhrases[this.currentPhraseIndex]}${progress ? ` ${progress}%` : ''}`;
+            }
+        }, 2200);
+    }
+
+    stopPhraseRotation() {
+        if (this.phraseInterval) {
+            window.clearInterval(this.phraseInterval);
+            this.phraseInterval = null;
         }
     }
 

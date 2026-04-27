@@ -1,6 +1,6 @@
 import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, Layers, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import LayerItem from './LayerItem';
 import { useTextureContext } from './TextureContext';
 import { TextureLoadingUtils } from './textureLoadingUtils';
@@ -78,7 +78,6 @@ export default function TextureLayerManager() {
     const { 
         layers, 
         setLayers, 
-        activeLayer, 
         setActiveLayer, 
         updateTransformation,
         addLayer: contextAddLayer
@@ -446,6 +445,7 @@ export default function TextureLayerManager() {
     // Custom function to handle adding a layer
     const handleAddLayer = useCallback(() => {
         const newLayer = contextAddLayer();
+        setActiveLayer(newLayer);
         
         // Make texture objects visible after adding a layer
         const texObjects = window.findTextureObjects?.() || [];
@@ -460,19 +460,32 @@ export default function TextureLayerManager() {
         setRefreshTrigger(prev => prev + 1);
 
         return newLayer;
-    }, [contextAddLayer]);
+    }, [contextAddLayer, setActiveLayer]);
 
     return (
-        <div className="professional-card p-4">
-            {/* Header */}
-            <div className="panel-header">
-                <Layers className="w-5 h-5 text-accent" />
-                <h2 className="text-lg font-semibold text-primary">Texture Layers</h2>
+        <div className="texture-layer-manager">
+            <div className="layer-manager-toolbar">
+                <button
+                    type="button"
+                    onClick={handleAddLayer}
+                    className="layer-manager-primary"
+                >
+                    <Plus className="w-4 h-4" />
+                    <span>New Layer</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={refreshTextureForParts}
+                    className="layer-manager-secondary"
+                >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Refresh</span>
+                </button>
             </div>
-            <div className="panel-content">
 
-                {/* Layer List */}
-                <div className="space-y-3 mb-4">
+            <div className="texture-layer-content">
+
+                <div className="layer-list">
                     {layers.map((layer, index) => (
                         <LayerItem
                             key={`${layer.id}-${refreshTrigger}`} // Force re-render when parts change
@@ -489,33 +502,17 @@ export default function TextureLayerManager() {
                             availableParts={getAvailablePartsForLayer(layer.id)} // Only texture mesh parts
                         />
                     ))}
+
+                    {layers.length === 0 ? (
+                        <div className="layer-empty-state">
+                            <p>No layers yet</p>
+                            <button type="button" onClick={handleAddLayer}>
+                                <Plus className="w-4 h-4" />
+                                Add first layer
+                            </button>
+                        </div>
+                    ) : null}
                 </div>
-
-                <div className="flex justify-between items-center mb-4">
-                    <button
-                        onClick={refreshTextureForParts}
-                        className="professional-button flex items-center gap-2"
-                    >
-                        <RefreshCw className="w-4 h-4" />
-                        Refresh Textures
-                    </button>
-                </div>
-
-                {/* Debug Text to show available parts */}
-                {textureMeshParts.length > 0 && (
-                    <div className="text-xs text-muted mb-3 p-2 professional-card bg-tertiary">
-                        Available texture parts: {textureMeshParts.join(', ')}
-                    </div>
-                )}
-
-                {/* Add Layer Button */}
-                <button
-                    onClick={handleAddLayer}
-                    className="professional-button primary w-full flex items-center justify-center gap-2"
-                >
-                    <Plus className="w-4 h-4" />
-                    Add Layer
-                </button>
             </div>
         </div>
     );

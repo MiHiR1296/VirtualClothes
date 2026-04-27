@@ -46,7 +46,10 @@ export class ThreeApplication {
             this.lightingSystem = new LightingSystem(scene, renderer);
             this.materialManager = new MaterialManager();
             this.modelLoader = new ModelLoader(scene, this.loadingManager, this.sceneManager);
-            this.postProcessing = new PostProcessing(scene, camera, renderer);
+            const usePostProcessing = false;
+            this.postProcessing = usePostProcessing
+                ? new PostProcessing(scene, camera, renderer)
+                : null;
             
 
             this.eventHandler = new EventHandler(
@@ -60,7 +63,9 @@ export class ThreeApplication {
                 this.loadingManager
             );
 
-            renderer.composer = this.postProcessing.composer;
+            if (this.postProcessing?.composer) {
+                renderer.composer = this.postProcessing.composer;
+            }
 
             animate(
                 this.renderer,

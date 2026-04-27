@@ -1,6 +1,17 @@
 import { logDebug, logInfo, logWarn, logError } from "./logger.js";
 import React, { useRef, useEffect, useState } from 'react';
-import { Layers, Palette, Settings, Move, Menu, ChevronRight } from 'lucide-react';
+import {
+  Brush,
+  Camera,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Layers,
+  Palette,
+  Shirt,
+} from 'lucide-react';
 import { ThreeApplication } from './ThreeApplication';
 import { TextureProvider } from './TextureContext';
 import TextureLayerManager from './TextureLayerManager';
@@ -52,11 +63,73 @@ const MODEL_VARIANTS = {
 const getDefaultFabric = (modelId) => {
   return FABRIC_OPTIONS[modelId]?.[0].value || FABRIC_OPTIONS.default[0].value;
 };
-import HDRIControls from './HDRIControls';
 import TechPack from './TechPack';
 import PantoneColorPicker from './PantoneColorPicker';
-import ResizableSidebar from './ResizableSidebar';
-import MultiSelectionIndicator from './MultiSelectionIndicator';
+
+const PANEL_GROUPS = {
+  left: [
+    { id: 'garment', label: 'Garment' },
+    { id: 'color', label: 'Color' },
+    { id: 'fabric', label: 'Fabric' }
+  ],
+  right: [
+    { id: 'layers', label: 'Layers' }
+  ]
+};
+
+const INITIAL_PANEL_STATE = {
+  garment: true,
+  color: true,
+  fabric: true,
+  layers: true
+};
+
+const QUICK_SWATCHES = [
+  '#f4f0e8',
+  '#ddc797',
+  '#c7a77a',
+  '#dfaa9d',
+  '#dc654f',
+  '#d84d42',
+  '#bf2451',
+  '#9a235d',
+  '#2f477d',
+  '#dbc18d',
+  '#315a92',
+  '#69664c',
+  '#1f6631',
+  '#103443',
+  '#041f42',
+  '#171717'
+];
+
+const FABRIC_TEXTURES = {
+  default: 'Plain',
+  cotton: 'Cotton',
+  nylon: 'Nylon',
+  leather: 'Leather',
+  metal: 'Metal',
+  plastic: 'Plastic',
+  cotton_100: 'Pique',
+  cotton_95_lycra5: 'Jersey',
+  cotton_60_poly40: 'Oxford',
+  cotton_57_modal38_spandex5: 'Stretch'
+};
+
+const getVisibleModelOptions = () =>
+  Object.entries(getModelsByCategory()).flatMap(([category, models]) =>
+    models.map((model) => ({
+      ...model,
+      category
+    }))
+  );
+
+const getGarmentLabel = (model) =>
+  model.name
+    .replace(/^Men's\s+/i, '')
+    .replace(/^Women's\s+/i, "Women's ")
+    .replace('Half Sleeve', '')
+    .trim();
 
 // Categorized Model Select Component
 const CategorizedModelSelect = ({ selectedModel, onChange }) => {
@@ -80,6 +153,189 @@ const CategorizedModelSelect = ({ selectedModel, onChange }) => {
     </select>
   );
 };
+
+const ConfiguratorPanel = ({
+  id,
+  title,
+  icon: Icon,
+  side,
+  onCollapse,
+  children
+}) => (
+  <section className={`config-panel config-panel--${id}`} data-side={side}>
+    <button
+      type="button"
+      className="config-panel__heading"
+      onClick={onCollapse}
+      aria-label={`Hide ${title}`}
+    >
+      <span>
+        {Icon ? <Icon className="config-panel__icon" /> : null}
+        {title}
+      </span>
+      {side === 'left' ? (
+        <ChevronLeft className="config-panel__collapse" />
+      ) : (
+        <ChevronRight className="config-panel__collapse" />
+      )}
+    </button>
+    <div className="config-panel__body">{children}</div>
+  </section>
+);
+
+const EdgeTabs = ({ side, panels, visibility, onRestore }) => {
+  const hiddenPanels = panels.filter((panel) => !visibility[panel.id]);
+  if (hiddenPanels.length === 0) return null;
+
+  return (
+    <div className={`edge-tabs edge-tabs--${side}`}>
+      {hiddenPanels.map((panel) => (
+        <button
+          key={panel.id}
+          type="button"
+          className="edge-tab"
+          onClick={() => onRestore(panel.id)}
+        >
+          {panel.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const GarmentPanel = ({ selectedModel, isLoading, onSelect }) => {
+  const models = getVisibleModelOptions();
+
+  return (
+    <div className="garment-list">
+      {models.map((model) => (
+        <button
+          key={model.id}
+          type="button"
+          disabled={isLoading}
+          className={`garment-option ${
+            selectedModel === model.id ? 'is-selected' : ''
+          }`}
+          onClick={() => onSelect(model.id)}
+        >
+          <span className="garment-option__icon">
+            <Shirt className="w-6 h-6" />
+          </span>
+          <span>
+            <span className="garment-option__label">{getGarmentLabel(model)}</span>
+            <span className="garment-option__meta">{model.category}</span>
+          </span>
+          {selectedModel === model.id ? <Check className="garment-option__check" /> : null}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const ColorPanel = ({
+  selectedColor,
+  availableParts,
+  selectedPartNames,
+  onColorSelect,
+  onSelectAll,
+  onTogglePart
+}) => (
+  <div className="color-panel-flow">
+    <div id="modelNameDisplay" className="selected-part-label">
+      Scope: All parts
+    </div>
+    <div className="part-scope-list">
+      <button
+        type="button"
+        className={`part-scope-row ${selectedPartNames.length === 0 ? 'is-selected' : ''}`}
+        onClick={onSelectAll}
+      >
+        <span>All parts</span>
+        <span className="part-scope-check">{selectedPartNames.length === 0 ? <Check className="w-4 h-4" /> : null}</span>
+      </button>
+      {availableParts.map((part) => {
+        const isSelected = selectedPartNames.includes(part.name);
+        return (
+          <button
+            key={part.id || part.name}
+            type="button"
+            className={`part-scope-row ${isSelected ? 'is-selected' : ''}`}
+            onClick={() => onTogglePart(part.name)}
+          >
+            <span>{part.label || part.name}</span>
+            <span className="part-scope-check">{isSelected ? <Check className="w-4 h-4" /> : null}</span>
+          </button>
+        );
+      })}
+    </div>
+    <PantoneColorPicker currentColor={selectedColor} onColorSelect={onColorSelect} />
+    <div className="pantone-grid" aria-label="Pantone swatches">
+      {QUICK_SWATCHES.map((color) => (
+        <button
+          key={color}
+          type="button"
+          className={`pantone-swatch ${selectedColor === color ? 'is-selected' : ''}`}
+          style={{ backgroundColor: color }}
+          onClick={() => onColorSelect(color)}
+          aria-label={color}
+        >
+          {selectedColor === color ? <Check className="w-4 h-4" /> : null}
+        </button>
+      ))}
+    </div>
+    <input
+      type="color"
+      id="colorPicker"
+      className="native-color-input"
+      value={selectedColor}
+      onInput={(event) => onColorSelect(event.target.value)}
+      aria-label="Custom color"
+    />
+  </div>
+);
+
+const FabricPanel = ({ selectedMaterial, selectedModel, isLoading, onSelect }) => {
+  const options = FABRIC_OPTIONS[selectedModel] || FABRIC_OPTIONS.default;
+
+  return (
+    <div className="fabric-grid">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          disabled={isLoading}
+          className={`fabric-option ${
+            selectedMaterial === option.value ? 'is-selected' : ''
+          }`}
+          onClick={() => onSelect(option.value)}
+        >
+          <span className={`fabric-sample fabric-sample--${option.value}`} />
+          <span className="fabric-option__name">
+            {FABRIC_TEXTURES[option.value] || option.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const BottomToolbar = ({ isCleanView, onToggleCleanView, onScreenshot }) => (
+  <div className="bottom-toolbar">
+    <button
+      type="button"
+      className="toolbar-icon-button"
+      onClick={onToggleCleanView}
+      aria-label={isCleanView ? 'Show interface' : 'Clean view'}
+      title={isCleanView ? 'Show interface' : 'Clean view'}
+    >
+      {isCleanView ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+    </button>
+    <button type="button" className="toolbar-button toolbar-button--light" onClick={onScreenshot}>
+      <Camera className="w-5 h-5" />
+      <span>Screenshot</span>
+    </button>
+  </div>
+);
 
 // colormanager
 // This goes in App.jsx - replace the entire window.colorManager object
@@ -183,11 +439,12 @@ export default function App() {
   const appRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState('men_polo_hs');
   const [selectedMaterial, setSelectedMaterial] = useState(getDefaultFabric('men_polo_hs'));
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedModelRoughness, setSelectedModelRoughness] = useState(1.0);
-  const [selectedModelMetalness, setSelectedModelMetalness] = useState(0.05);
+  const [selectedColor, setSelectedColor] = useState('#ffffff');
+  const [panelVisibility, setPanelVisibility] = useState(INITIAL_PANEL_STATE);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPartsCount, setSelectedPartsCount] = useState(0);
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [availableParts, setAvailableParts] = useState([]);
+  const [selectedPartNames, setSelectedPartNames] = useState([]);
 
   useEffect(() => {
     if (!canvasRef.current || appRef.current) return;
@@ -198,54 +455,8 @@ export default function App() {
         appRef.current = app;
 
         await app.initPromise;
+        setIsAppReady(true);
 
-        // Setup global reference for model roughness/metalness update
-        window.updateSelectedModelMaterial = () => {
-          if (!window.selectedModelPart) return;
-          
-          if (window.selectedModelPart.name.includes('Fronttex') || 
-              window.selectedModelPart.name.includes('Backtex')) return;
-          
-          // Make sure we have userData
-          if (!window.selectedModelPart.userData) {
-            window.selectedModelPart.userData = {};
-          }
-          
-          // Use preset values
-          const presetRoughness = 1.0;
-          const presetMetalness = 0.05;
-          
-          // Store the values in userData
-          window.selectedModelPart.userData.exactRoughness = presetRoughness;
-          window.selectedModelPart.userData.exactMetalness = presetMetalness;
-          
-          // Check if the material exists
-          if (window.selectedModelPart.material) {
-            // Capture original values we want to preserve
-            const origOpacity = window.selectedModelPart.material.opacity !== undefined ? 
-                                window.selectedModelPart.material.opacity : 1.0;
-            const origTransparent = window.selectedModelPart.material.transparent !== undefined ? 
-                                  window.selectedModelPart.material.transparent : false;
-            
-            // Apply the preset values
-            window.selectedModelPart.material.roughness = presetRoughness;
-            window.selectedModelPart.material.metalness = presetMetalness;
-            
-            // Restore original opacity/transparency values
-            window.selectedModelPart.material.opacity = origOpacity;
-            window.selectedModelPart.material.transparent = origTransparent;
-            
-            // Force material update
-            window.selectedModelPart.material.needsUpdate = true;
-            
-            // Update React state
-            setSelectedModelRoughness(presetRoughness);
-            setSelectedModelMetalness(presetMetalness);
-            
-            logDebug(`Material set to preset values: roughness=${presetRoughness}, metalness=${presetMetalness}`);
-          }
-        };
-        
         // Make MODEL_PATHS accessible globally for techpack generation
         import('./modelLoader.js').then(module => {
           window.MODEL_PATHS = module.MODEL_PATHS;
@@ -271,76 +482,139 @@ export default function App() {
     setSelectedMaterial(defaultMat);
   }, [selectedModel]);
 
-  // Add an effect to watch for changes to the selection
   useEffect(() => {
-    // Function to update the selection count
-    const updateSelectionCount = () => {
-      const partsCount = window.selectedModelParts?.length || 0;
-      setSelectedPartsCount(partsCount);
+    const refreshSelectableParts = (event) => {
+      const detail = event?.detail || {};
+      const parts = detail.availableParts || window.getSelectableModelParts?.() || [];
+      const selectedNames = new Set(detail.parts || window.selectedModelParts?.map((part) => part.name) || []);
+      const selectedGroups = parts
+        .filter((part) => part.partNames?.length && part.partNames.every((partName) => selectedNames.has(partName)))
+        .map((part) => part.name);
+      setAvailableParts(parts);
+      setSelectedPartNames(selectedGroups);
     };
     
-    // Set up event listener for selection changes
-    window.addEventListener('model-part-selected', updateSelectionCount);
+    window.addEventListener('model-part-selected', refreshSelectableParts);
+    window.addEventListener('model-loaded', refreshSelectableParts);
     
-    // Initial check
-    updateSelectionCount();
+    refreshSelectableParts();
     
-    // Set up an interval to check the selection count (as a fallback)
-    const intervalId = setInterval(updateSelectionCount, 500);
+    const intervalId = setInterval(refreshSelectableParts, 1000);
     
     return () => {
-      window.removeEventListener('model-part-selected', updateSelectionCount);
+      window.removeEventListener('model-part-selected', refreshSelectableParts);
+      window.removeEventListener('model-loaded', refreshSelectableParts);
       clearInterval(intervalId);
     };
   }, []);
 
   // Function to clear the selection
   const clearSelection = () => {
+    if (typeof window.clearModelPartSelection === 'function') {
+      window.clearModelPartSelection();
+      setSelectedPartNames([]);
+      return;
+    }
+
     window.selectedModelPart = null;
     window.selectedModelParts = [];
     
     // This will trigger an update in the eventHandler
     if (appRef.current?.eventHandler) {
       appRef.current.eventHandler.selectedModelParts = [];
-      appRef.current.eventHandler.updateModelNameDisplay('None');
+      appRef.current.eventHandler.updateModelNameDisplay('All parts');
     }
     
-    setSelectedPartsCount(0);
+    setSelectedPartNames([]);
+    window.dispatchEvent(new CustomEvent('model-part-selected', {
+      detail: {
+        count: 0,
+        parts: [],
+        availableParts
+      }
+    }));
   };
 
-  const applyPresetsToAllParts = () => {
-    if (!appRef.current || !appRef.current.scene) return;
-    
-    // Find all mesh objects that aren't texture meshes
-    appRef.current.scene.traverse((object) => {
-      if (object.isMesh && 
-          !object.name.includes('Fronttex') && 
-          !object.name.includes('Backtex') &&
-          object.userData.isImported) {
-        
-        // Save the current object as selected
-        const previousSelected = window.selectedModelPart;
-        
-        // Temporarily set this object as selected
-        window.selectedModelPart = object;
-        
-        // Apply preset values
-        window.updateSelectedModelMaterial();
-        
-        // Restore previous selection
-        window.selectedModelPart = previousSelected;
+  const selectAllParts = () => {
+    clearSelection();
+  };
+
+  const togglePartScope = (partName) => {
+    const selectedSet = new Set(selectedPartNames);
+
+    if (selectedPartNames.length === 0) {
+      selectedSet.add(partName);
+    } else if (selectedSet.has(partName)) {
+      selectedSet.delete(partName);
+    } else {
+      selectedSet.add(partName);
+    }
+
+    const nextSelection = Array.from(selectedSet);
+    setSelectedPartNames(nextSelection);
+    window.setSelectedModelPartsByName?.(nextSelection);
+  };
+
+  const setPanelVisible = (panelId, isVisible) => {
+    setPanelVisibility((current) => ({
+      ...current,
+      [panelId]: isVisible
+    }));
+  };
+
+  const enterCleanView = () => {
+    setPanelVisibility(
+      Object.fromEntries(
+        Object.keys(INITIAL_PANEL_STATE).map((panelId) => [panelId, false])
+      )
+    );
+  };
+
+  const showAllPanels = () => {
+    setPanelVisibility({ ...INITIAL_PANEL_STATE });
+  };
+
+  const applyColorToTargets = (colorValue) => {
+    const applyColor = (object) => {
+      if (!object?.material || object.name?.includes('Fronttex') || object.name?.includes('Backtex')) {
+        return;
+      }
+
+      if (!object.userData) object.userData = {};
+      object.userData.exactColor = colorValue;
+      object.material.color.set(colorValue);
+      object.material.needsUpdate = true;
+    };
+
+    const selectedParts = window.selectedModelParts || [];
+    if (selectedParts.length > 0) {
+      selectedParts.forEach(applyColor);
+      return;
+    }
+
+    if (window.selectedModelPart) {
+      applyColor(window.selectedModelPart);
+      return;
+    }
+
+    appRef.current?.scene?.traverse((object) => {
+      if (object.isMesh && object.userData?.isImported) {
+        applyColor(object);
       }
     });
-    
-    logDebug("Applied preset material properties to all model parts");
   };
 
-  const handleModelChange = async (e) => {
+  const handleColorSelect = (colorValue) => {
+    setSelectedColor(colorValue);
+    applyColorToTargets(colorValue);
+  };
+
+  const loadModelById = async (modelId) => {
     if (!appRef.current || isLoading) return;
 
     try {
       setIsLoading(true);
-      const modelId = e.target.value;
+      clearSelection();
       setSelectedModel(modelId);
 
       const defaultMat = getDefaultFabric(modelId);
@@ -348,21 +622,6 @@ export default function App() {
       const variant = MODEL_VARIANTS[modelId]?.[defaultMat] || modelId;
 
       await appRef.current.loadModel(variant);
-
-      // Apply preset material values after model loads
-      setTimeout(() => {
-        // Set state values to match presets
-        setSelectedModelRoughness(1.0);
-        setSelectedModelMetalness(0.05);
-        
-        // Apply to selected parts if any
-        if (window.selectedModelPart) {
-          window.updateSelectedModelMaterial();
-        }
-        
-        // Apply to all model parts for consistency
-        applyPresetsToAllParts();
-      }, 500); // Short delay to ensure model is fully loaded
     } catch (error) {
       logError('Error loading model:', error);
     } finally {
@@ -370,23 +629,19 @@ export default function App() {
     }
   };
 
-  const handleMaterialChange = async (e) => {
-    const newMaterial = e.target.value;
+  const handleModelChange = async (e) => {
+    await loadModelById(e.target.value);
+  };
+
+  const loadMaterialVariant = async (newMaterial) => {
     setSelectedMaterial(newMaterial);
 
     if (!appRef.current) return;
     try {
       setIsLoading(true);
+      clearSelection();
       const variant = MODEL_VARIANTS[selectedModel]?.[newMaterial] || selectedModel;
       await appRef.current.loadModel(variant);
-      setTimeout(() => {
-        setSelectedModelRoughness(1.0);
-        setSelectedModelMetalness(0.05);
-        if (window.selectedModelPart) {
-          window.updateSelectedModelMaterial();
-        }
-        applyPresetsToAllParts();
-      }, 500);
     } catch (error) {
       logError('Error loading variant model:', error);
     } finally {
@@ -396,170 +651,104 @@ export default function App() {
     // Material updates are handled by the loaded model's textures
   };
 
-  const handleHDRIChange = (path, intensity) => {
-    if (appRef.current?.lightingSystem) {
-      appRef.current.lightingSystem.loadHDRI(path, intensity);
-    }
+  const handleMaterialChange = async (e) => {
+    await loadMaterialVariant(e.target.value);
   };
 
-  const handleHDRIRotation = (angle) => {
-    if (appRef.current?.lightingSystem) {
-      appRef.current.lightingSystem.rotateEnvironment(angle);
-    }
+  const captureScreenshot = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const link = document.createElement('a');
+    link.download = `virtual-clothes-${selectedModel}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
-  const handleHDRIIntensity = (intensity) => {
-    if (appRef.current?.lightingSystem) {
-      appRef.current.lightingSystem.updateEnvironmentMapIntensity(intensity);
-    }
-  };
+  const isCleanView = Object.values(panelVisibility).every((isVisible) => !isVisible);
 
   return (
     <TextureProvider>
-      <div className="relative min-h-screen">
-        {/* Top Navigation */}
-        <nav className="professional-panel">
-          <div className="flex items-center justify-between px-6 py-3">
-            <h1 className="text-lg font-semibold text-primary">Virtual Clothes Studio</h1>
-            <div className="flex items-center gap-4">
-              <CategorizedModelSelect 
+      <div className={`configurator-shell ${isCleanView ? 'is-clean' : ''}`}>
+        <div className="product-stage">
+          <canvas ref={canvasRef} className="product-canvas" />
+          <ControlsTooltip />
+        </div>
+
+        <div className="studio-brand">
+          <span>Virtual Clothes Studio</span>
+        </div>
+
+        <div className="panel-stack panel-stack--left">
+          {panelVisibility.garment && (
+            <ConfiguratorPanel
+              id="garment"
+              title="Garment"
+              icon={Shirt}
+              side="left"
+              onCollapse={() => setPanelVisible('garment', false)}
+            >
+              <GarmentPanel
                 selectedModel={selectedModel}
-                onChange={handleModelChange}
+                isLoading={isLoading}
+                onSelect={loadModelById}
               />
-              <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="menu-toggle professional-button"
-                disabled={isLoading}
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </nav>
+            </ConfiguratorPanel>
+          )}
 
-        {/* Main Content Area */}
-        <div className="flex h-screen pt-20">
-          {/* Canvas */}
-          <div className="flex-1 relative">
-            <canvas ref={canvasRef} className="w-full h-full" />
-            <ControlsTooltip />
-          </div>
-
-          {/* Resizable Sidebar */}
-          <ResizableSidebar isOpen={isSidebarOpen}>
-            {/* HDRI Controls */}
-            <div className="mb-6">
-              <div className="divider"></div>
-              <HDRIControls
-                onHDRIChange={(path, intensity) => handleHDRIChange(path, intensity)}
-                onRotationChange={handleHDRIRotation}
-                onIntensityChange={handleHDRIIntensity}
-                onBackgroundToggle={(show) => {
-                    if (appRef.current?.lightingSystem) {
-                        appRef.current.lightingSystem.toggleBackground(show);
-                    }
-                }}
+          {panelVisibility.color && (
+            <ConfiguratorPanel
+              id="color"
+              title="Color"
+              icon={Brush}
+              side="left"
+              onCollapse={() => setPanelVisible('color', false)}
+            >
+              <ColorPanel
+                selectedColor={selectedColor}
+                availableParts={availableParts}
+                selectedPartNames={selectedPartNames}
+                onColorSelect={handleColorSelect}
+                onSelectAll={selectAllParts}
+                onTogglePart={togglePartScope}
               />
-            </div>
+            </ConfiguratorPanel>
+          )}
 
-            {/* Fabric Selection */}
-            <div className="professional-card p-4 mb-4">
-              <div className="panel-header">
-                <Palette className="w-4 h-4" />
-                Fabric Options
-              </div>
-              <div className="panel-content">
-                <select
-                  id="materialSelect"
-                  className="professional-input w-full mb-4 focus-ring"
-                  value={selectedMaterial}
-                  onChange={handleMaterialChange}
-                >
-                  {(FABRIC_OPTIONS[selectedModel] || FABRIC_OPTIONS.default).map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          {panelVisibility.fabric && (
+            <ConfiguratorPanel
+              id="fabric"
+              title="Fabric"
+              icon={Palette}
+              side="left"
+              onCollapse={() => setPanelVisible('fabric', false)}
+            >
+              <FabricPanel
+                selectedMaterial={selectedMaterial}
+                selectedModel={selectedModel}
+                isLoading={isLoading}
+                onSelect={loadMaterialVariant}
+              />
+            </ConfiguratorPanel>
+          )}
+        </div>
 
-            {/* Material Properties */}
-            <div id="workspace-colors" className="professional-card p-4 mb-4">
-              <div className="panel-header">
-                <Settings className="w-4 h-4" />
-                Properties
-              </div>
-              <div className="panel-content">
-                <div className="space-y-4">
-                  {/* Selected Model Display */}
-                  <div id="modelNameDisplay" className="text-sm text-secondary">
-                    Selected: None
-                  </div>
-                  
-                  {/* Multi-Selection Indicator */}
-                  <MultiSelectionIndicator 
-                    count={selectedPartsCount} 
-                    onClear={clearSelection} 
-                  />
-                  
-                  {/* Color Picker */}
-                  <div className="form-group">
-                    <label className="form-label">Color</label>
-                    
-                    <PantoneColorPicker 
-                      currentColor={window.selectedModelPart 
-                        ? window.colorManager.getExactColorForPicker(window.selectedModelPart) 
-                        : "#ffffff"}
-                      onColorSelect={(color) => {
-                        if (window.selectedModelPart) {
-                          // Check if we have multiple selections
-                          if (window.selectedModelParts && window.selectedModelParts.length > 1) {
-                            // Use the global color manager to store and apply the color to all selected parts
-                            window.colorManager.storeExactColor(window.selectedModelParts, color);
-                          } else {
-                            // Apply to single selection
-                            window.colorManager.storeExactColor(window.selectedModelPart, color);
-                          }
-                          
-                          // Update color picker UI
-                          const colorPicker = document.getElementById('colorPicker');
-                          if (colorPicker) {
-                            colorPicker.value = color;
-                          }
-                        }
-                      }} 
-                    />
-                    <input 
-                      type="color" 
-                      id="colorPicker"
-                      className="professional-input w-full h-8 mt-2 focus-ring" 
-                      onInput={(e) => {
-                        // Get the color value directly from the input
-                        const exactColor = e.target.value;
-                        
-                        // Check if we have multiple selections
-                        if (window.selectedModelParts && window.selectedModelParts.length > 1) {
-                          // Apply to all selected parts
-                          window.colorManager.storeExactColor(window.selectedModelParts, exactColor);
-                        } else if (window.selectedModelPart) {
-                          // Apply to single selection
-                          window.colorManager.storeExactColor(window.selectedModelPart, exactColor);
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="panel-stack panel-stack--right">
+          {panelVisibility.layers && (
+            <ConfiguratorPanel
+              id="layers"
+              title="Layers"
+              icon={Layers}
+              side="right"
+              onCollapse={() => setPanelVisible('layers', false)}
+            >
+              <TextureLayerManager />
+            </ConfiguratorPanel>
+          )}
 
-            {/* Texture Layer Manager */}
-            <div id="materialSelect-container"></div>
-            <TextureLayerManager />
-            
-            {/* TechPack Generator */}
-            {appRef.current && (
-              <TechPack 
+          {isAppReady && appRef.current && (
+            <div className="techpack-dock">
+              <TechPack
                 selectedModel={selectedModel}
                 selectedMaterial={selectedMaterial}
                 materialManager={appRef.current.materialManager}
@@ -568,19 +757,36 @@ export default function App() {
                 camera={appRef.current.camera}
                 controls={appRef.current.controls}
               />
-            )}
-          </ResizableSidebar>
+            </div>
+          )}
         </div>
 
-        {/* UV Editor Container */}
+        <EdgeTabs
+          side="left"
+          panels={PANEL_GROUPS.left}
+          visibility={panelVisibility}
+          onRestore={(panelId) => setPanelVisible(panelId, true)}
+        />
+        <EdgeTabs
+          side="right"
+          panels={PANEL_GROUPS.right}
+          visibility={panelVisibility}
+          onRestore={(panelId) => setPanelVisible(panelId, true)}
+        />
+
+        <BottomToolbar
+          isCleanView={isCleanView}
+          onToggleCleanView={isCleanView ? showAllPanels : enterCleanView}
+          onScreenshot={captureScreenshot}
+        />
+
         <UVEditorContainer />
 
-        {/* Loading Overlay */}
         {isLoading && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="professional-card p-6 text-center">
-              <div className="loading-spinner mx-auto mb-4"></div>
-              <p className="text-primary font-medium">Loading model...</p>
+          <div className="loading-overlay">
+            <div className="loading-card">
+              <div className="loading-spinner"></div>
+              <p>Loading model...</p>
             </div>
           </div>
         )}
